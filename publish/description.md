@@ -2,7 +2,9 @@
 
 **A server-side shop, economy and player market — no client install needed.**
 
-Merchantry adds a complete, easy-to-configure economy to your server: a GUI shop, an optional currency with fair ways to earn it, a player market, repairs, homes, permanent utility commands and more. Everything runs on the server, so players can join with a plain NeoForge client — only the server needs the mod.
+Merchantry adds a complete, easy-to-configure economy to your server: a GUI shop, an optional currency with fair ways to earn it, a player market, repairs, homes, permanent utility commands and more. Everything runs on the server, so players can join with a plain vanilla client — only the server needs the mod.
+
+Available for **NeoForge** and **Fabric** (Minecraft 1.21.1).
 
 ---
 
@@ -45,9 +47,10 @@ Merchantry adds a complete, easy-to-configure economy to your server: a GUI shop
 - `/sethome`, `/home`, `/delhome`, `/homes`
 - One home by default, more can be bought in the shop (up to a configurable limit)
 
-### 🪙 Create: Numismatics compatibility (optional)
+### 🪙 Create: Numismatics compatibility (optional, NeoForge only)
 - `/exchange` — convert **$ ↔ Numismatics bank balance** and deposit coins from your inventory
 - Configurable exchange rate and fee
+- Not available on Fabric — Create: Numismatics has no Fabric release for 1.21.1
 
 ### 🛠️ Admin tools
 - **Graphical offer editor** — just type `/shopconfig`
@@ -65,17 +68,20 @@ Merchantry adds a complete, easy-to-configure economy to your server: a GUI shop
 ## ⚙️ Configuration
 | File | What it contains |
 |---|---|
-| `config/merchantry-server.toml` | currency, earnings, homes, repairs, market, exchange, language |
+| `config/merchantry-server.toml` | currency, earnings, homes, repairs, market, exchange (NeoForge), language |
 | `config/merchantry_offers.json` | shop offers (edit in-game with `/shopconfig`) |
 | `config/merchantry_sell.json` | items the server buys and their prices |
 
 Admin commands require permission level 2 (operator).
 
 ## 📦 Requirements
-- Minecraft **1.21.1**, **NeoForge**
+- Minecraft **1.21.1**
+- **NeoForge** 21.1, or **Fabric** Loader 0.16+ with [Fabric API](https://modrinth.com/mod/fabric-api)
 - Server-side. The client mod is **optional** (only needed for JEI/EMI drag & drop in the editor)
 
-**Optional compatibility:** [Create: Numismatics](https://www.curseforge.com/minecraft/mc-mods/numismatics), [JEI](https://www.curseforge.com/minecraft/mc-mods/jei), [EMI](https://www.curseforge.com/minecraft/mc-mods/emi)
+**Optional compatibility:** [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) and [EMI](https://www.curseforge.com/minecraft/mc-mods/emi) (both loaders), [Create: Numismatics](https://www.curseforge.com/minecraft/mc-mods/numismatics) (NeoForge only)
 
 ## 📜 License
 MIT — feel free to use Merchantry in your modpacks.
+
+Source code: [github.com/KociakTV/merchantry](https://github.com/KociakTV/merchantry) — bug reports and suggestions welcome in [Issues](https://github.com/KociakTV/merchantry/issues).

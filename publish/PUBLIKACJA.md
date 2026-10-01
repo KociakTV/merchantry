@@ -6,8 +6,12 @@ Pliki w tym folderze:
 - `CHANGELOG.md` — lista zmian do wklejenia przy wersji
 - `generate_icon.ps1` — skrypt, którym wygenerowano ikonę (do ewentualnych poprawek)
 
-Plik do wysłania: `build/libs/merchantry_neoforge_1.21.1-<wersja>.jar`
-(zbuduj: w IntelliJ panel Gradle → Tasks → build → **build**, albo `gradlew build`)
+Pliki do wysłania (zwykłe jary, **bez** `-sources`):
+- NeoForge: `merchantry_neoforge_1.21.1/build/libs/merchantry_neoforge_1.21.1-<wersja>.jar`
+- Fabric: `merchantry_fabric_1.21.1/build/libs/merchantry_fabric_1.21.1-<wersja>.jar`
+  — loader Fabric, tylko Minecraft 1.21.1, zależność **Fabric API** (Required), bez Numismatics
+
+(zbuduj: w IntelliJ panel Gradle → Tasks → build → **build**, albo `gradlew build` w folderze danej wersji)
 
 ---
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 (Fabric) — Fabric release
+- First Fabric version for Minecraft 1.21.1 (requires Fabric API)
+- Same features as NeoForge 1.0.0, except the Create: Numismatics exchange (`/exchange`), as Numismatics is not available on Fabric 1.21.1
+
 ## 1.0.0 — Initial release
 - GUI shop with Buy / Sell / Market tabs and purchase confirmation
 - Offer types: items, permanent utility commands, extra homes, repairs, keepInventory charges, one-time commands
