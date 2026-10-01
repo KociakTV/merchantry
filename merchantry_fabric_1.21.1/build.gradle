@@ -1,0 +1,120 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = mod_version
+group = mod_group_id
+
+// Nazwa pliku jak folder projektu: merchantry_fabric_1.21.1-1.0.0.jar
+// (od razu widać loader i wersję Minecrafta)
+base {
+    archivesName = "${mod_id}_fabric_${minecraft_version}"
+}
+
+repositories {
+    // Parchment - czytelne nazwy parametrów w kodzie Minecrafta
+    maven {
+        name = "ParchmentMC"
+        url = "https://maven.parchmentmc.org"
+    }
+    // Modrinth - JEI i EMI
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+loom {
+    // Nazwy z mappingów Mojanga - kod jest wtedy prawie taki sam jak w wersji NeoForge
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        server {
+            // Bez okna serwera - konsola w IntelliJ wystarczy
+            programArgs "--nogui"
+        }
+    }
+
+    accessWidenerPath = file("src/main/resources/${mod_id}.accesswidener")
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert.
+    // Kompilujemy się z nimi, ale do naszego jara nie trafiają.
+    modCompileOnly "maven.modrinth:jei:${jei_version}"
+    modCompileOnly "maven.modrinth:emi:${emi_version}"
+
+    // Mod ładowany w kliencie testowym z IntelliJ (nie trafia do naszego jara).
+    // JEI i EMI naraz nie mają sensu - żeby testować JEI, zamień emi na jei.
+    modLocalRuntime "maven.modrinth:emi:${emi_version}"
+}
+
+// Podstawia wartości z gradle.properties do fabric.mod.json
+processResources {
+    var replaceProperties = [
+            version          : mod_version,
+            mod_id           : mod_id,
+            mod_name         : mod_name,
+            mod_license      : mod_license,
+            mod_authors      : mod_authors,
+            mod_description  : mod_description,
+            minecraft_version: minecraft_version,
+            loader_min_version: loader_min_version,
+    ]
+    inputs.properties replaceProperties
+    filesMatching("fabric.mod.json") {
+        expand replaceProperties
+    }
+}
+
+// Minecraft 1.21.1 wymaga Javy 21
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+// Plik licencji w jarze (jako LICENSE_merchantry, żeby nie kolidował z innymi modami w modpacku)
+def licenseName = "LICENSE_${mod_id}"
+tasks.named('jar', Jar).configure {
+    from('LICENSE') {
+        rename { licenseName }
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}

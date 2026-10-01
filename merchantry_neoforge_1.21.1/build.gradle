@@ -1,0 +1,170 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.147'
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+sourceSets.main.resources {
+    // Zasoby wygenerowane przez data generatory
+    srcDir('src/generated/resources')
+
+    exclude("**/*.bbmodel")
+    exclude("src/generated/**/.cache")
+}
+
+repositories {
+    // Modrinth - Create i Create: Numismatics
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+// Nazwa pliku jak folder projektu: merchantry_neoforge_1.21.1-1.0.0.jar
+// (od razu widać loader i wersję Minecrafta)
+base {
+    archivesName = "${mod_id}_neoforge_${minecraft_version}"
+}
+
+// Minecraft 1.21.1 wymaga Javy 21
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        // Wspólne ustawienia wszystkich konfiguracji uruchomieniowych
+        configureEach { run ->
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+            // Numismatics zamienia ścieżkę konfiguracji logów na URI - ścieżka Windows ze spacją
+            // (np. "Minecraft Mods") go wywraca, więc podajemy ją od razu jako poprawny URI
+            systemProperty 'log4j2.configurationFile',
+                    file("build/moddev/${run.name}Log4j2.xml").toURI().toString()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// 'localRuntime' - zależności tylko do testów w dev, niepublikowane dalej
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Create: Numismatics - opcjonalna zgodność (kantor). Kompilujemy się z nim,
+    // ale nasz mod działa także bez niego.
+    compileOnly "maven.modrinth:create:${create_version}"
+    compileOnly "maven.modrinth:numismatics:${numismatics_version}"
+
+    // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
+    compileOnly "maven.modrinth:jei:${jei_version}"
+    compileOnly "maven.modrinth:emi:${emi_version}"
+
+    // Mody ładowane w kliencie/serwerze testowym z IntelliJ (nie trafiają do naszego jara).
+    // JEI i EMI naraz nie mają sensu - żeby testować EMI, zamień linię z jei na emi.
+    localRuntime "maven.modrinth:create:${create_version}"
+    localRuntime "maven.modrinth:numismatics:${numismatics_version}"
+    localRuntime "maven.modrinth:emi:${emi_version}"
+}
+
+// Podstawia wartości z gradle.properties do neoforge.mods.toml
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+// Generuje metadane przy każdym przeładowaniu projektu w IDE
+neoForge.ideSyncTask generateModMetadata
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Plik licencji w jarze (jako LICENSE_merchantry, żeby nie kolidował z innymi modami w modpacku)
+def licenseName = "LICENSE_${mod_id}"
+tasks.named('jar', Jar).configure {
+    from('LICENSE') {
+        rename { licenseName }
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

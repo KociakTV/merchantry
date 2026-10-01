@@ -1,0 +1,6 @@
+# Normalizacja końców linii: w repo LF, skrypty Windows z CRLF
+* text=auto
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary

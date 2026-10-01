@@ -1,0 +1,9 @@
+# Wspólne dla całego repo - każdy projekt ma też własny .gitignore
+.idea
+.vscode
+*.iml
+.DS_Store
+Thumbs.db
+
+# Lokalne ustawienia Claude Code
+**/.claude/settings.local.json

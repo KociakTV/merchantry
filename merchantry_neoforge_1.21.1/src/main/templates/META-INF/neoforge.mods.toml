@@ -1,0 +1,43 @@
+# Metadane moda. Zmienne w klamrach są podstawiane z gradle.properties przy budowaniu.
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="${mod_authors}"
+# Ikona na liście modów (pixel art - bez rozmywania)
+logoFile="merchantry.png"
+logoBlur=false
+# Strona moda (CurseForge: https://www.curseforge.com/minecraft/mc-mods/merchantry)
+displayURL="https://modrinth.com/mod/merchantry"
+#issueTrackerURL="https://github.com/.../issues"
+# Mod tylko serwerowy - klienci bez moda mogą się łączyć
+displayTest="IGNORE_SERVER_VERSION"
+description='''
+${mod_description}
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+# Opcjonalnie: Create: Numismatics (kantor dolary - monety)
+[[dependencies.${mod_id}]]
+    modId="numismatics"
+    type="optional"
+    versionRange="[1.0.19,)"
+    ordering="AFTER"
+    side="SERVER"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
