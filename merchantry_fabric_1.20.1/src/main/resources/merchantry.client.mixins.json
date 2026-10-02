@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "pl.ktv.merchantry.client.mixin",
+  "plugin": "pl.ktv.merchantry.compat.MerchantryMixinPlugin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ClientPacketListenerMixin",
+    "JourneyMapDeathpointMixin",
+    "XaeroDeathpointMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

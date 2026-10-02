@@ -13,6 +13,7 @@ Merchantry adds a GUI shop, an optional currency with hard-to-automate ways to e
 |---|---|---|
 | [`merchantry_neoforge_1.21.1`](merchantry_neoforge_1.21.1) | NeoForge 21.1 | Full feature set, including the `/exchange` for Create: Numismatics |
 | [`merchantry_fabric_1.21.1`](merchantry_fabric_1.21.1) | Fabric (Loader ≥ 0.16, Fabric API) | Same features except `/exchange` (Numismatics has no Fabric 1.21.1 release) |
+| [`merchantry_fabric_1.20.1`](merchantry_fabric_1.20.1) | Fabric (Loader ≥ 0.15, Fabric API) | Version 1.1.0: `/exchange` plus compatibility with Create and addons, AE2, FTB Ultimine, Trinkets, grave and map mods |
 
 Both versions use Mojang mappings, so the code is nearly identical. Shared logic is duplicated, so changes usually have to be applied in both folders.
 
@@ -21,11 +22,11 @@ Both versions use Mojang mappings, so the code is nearly identical. Shared logic
 Each folder is a standalone Gradle project:
 
 ```bash
-cd merchantry_neoforge_1.21.1   # or merchantry_fabric_1.21.1
+cd merchantry_neoforge_1.21.1   # or merchantry_fabric_1.21.1 / merchantry_fabric_1.20.1
 ./gradlew build
 ```
 
-The jar ends up in `build/libs/`. The mod targets Java 21. The Fabric build runs Gradle itself on Java 25 (downloaded automatically, required by Loom 1.18).
+The jar ends up in `build/libs/`. The 1.21.1 versions target Java 21, the 1.20.1 version Java 17. The Fabric build runs Gradle itself on Java 25 (downloaded automatically, required by Loom 1.18).
 
 ## License
 

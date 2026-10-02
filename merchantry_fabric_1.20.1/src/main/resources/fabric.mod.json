@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/merchantry"
+  },
+  "license": "${mod_license}",
+  "icon": "merchantry.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "pl.ktv.merchantry.Merchantry"
+    ],
+    "emi": [
+      "pl.ktv.merchantry.client.emi.EmiCompat"
+    ],
+    "jei_mod_plugin": [
+      "pl.ktv.merchantry.client.jei.JeiCompat"
+    ],
+    "client": [
+      "pl.ktv.merchantry.client.MerchantryClient"
+    ]
+  },
+  "mixins": [
+    "merchantry.mixins.json",
+    "merchantry.client.mixins.json"
+  ],
+  "accessWidener": "merchantry.accesswidener",
+  "depends": {
+    "fabricloader": ">=${loader_min_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17"
+  },
+  "suggests": {
+    "create": "*",
+    "numismatics": "*",
+    "ae2": "*",
+    "ftbultimine": "*",
+    "trinkets": "*",
+    "universal-graves": "*",
+    "yigd": "*",
+    "ftbchunks": "*",
+    "xaerominimap": "*",
+    "journeymap": "*"
+  }
+}

@@ -1,0 +1,186 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = mod_version
+group = mod_group_id
+
+// Nazwa pliku jak folder projektu: merchantry_fabric_1.20.1-1.1.0.jar
+// (od razu widać loader i wersję Minecrafta)
+base {
+    archivesName = "${mod_id}_fabric_${minecraft_version}"
+}
+
+repositories {
+    // Parchment - czytelne nazwy parametrów w kodzie Minecrafta
+    maven {
+        name = "ParchmentMC"
+        url = "https://maven.parchmentmc.org"
+    }
+    // FTB Ultimine i FTB Library
+    maven {
+        name = "FTB"
+        url = "https://maven.ftb.dev/releases"
+        content {
+            includeGroup "dev.ftb.mods"
+        }
+    }
+    // Cardinal Components - interfejsy, z których korzysta API Trinkets
+    maven {
+        name = "Ladysnake"
+        url = "https://maven.ladysnake.org/releases"
+        content {
+            includeGroup "dev.onyxstudios.cardinal-components-api"
+        }
+    }
+    // Architectury - wymagane przez FTB Library
+    maven {
+        name = "Architectury"
+        url = "https://maven.architectury.dev"
+        content {
+            includeGroup "dev.architectury"
+        }
+    }
+    // Modrinth - Create, Numismatics, AE2, JEI, EMI
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+loom {
+    // Nazwy z mappingów Mojanga - kod jest wtedy prawie taki sam jak w wersji NeoForge
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        server {
+            // Bez okna serwera - konsola w IntelliJ wystarczy
+            programArgs "--nogui"
+        }
+    }
+
+    accessWidenerPath = file("src/main/resources/${mod_id}.accesswidener")
+}
+
+configurations {
+    // Mody testowe kopiowane do run/mods (patrz copyTestMods)
+    testMods
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // Opcjonalna zgodność - kompilujemy się z tymi modami, ale do naszego jara nie trafiają,
+    // a Merchantry działa także bez nich.
+    // Create: Numismatics (kantor $ <-> monety); jego klasy odwołują się do klas Create
+    modCompileOnly("maven.modrinth:numismatics:${numismatics_version}") { transitive = false }
+    modCompileOnly("maven.modrinth:create-fabric:${create_version}") { transitive = false }
+    // FTB Ultimine (kupowane prawo do ultimine)
+    modCompileOnly("dev.ftb.mods:ftb-ultimine-fabric:${ftb_ultimine_version}") { transitive = false }
+    // Trinkets (sloty Trinkets przy ładunku keepInventory)
+    modCompileOnly("maven.modrinth:trinkets:${trinkets_version}") { transitive = false }
+    modCompileOnly("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${cca_version}") { transitive = false }
+    // Universal Graves i You're in Grave Danger (bez grobu, gdy zadziałał ładunek keepInventory)
+    modCompileOnly("maven.modrinth:universal-graves:${universal_graves_version}") { transitive = false }
+    modCompileOnly("maven.modrinth:yigd:${yigd_version}") { transitive = false }
+
+    // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
+    modCompileOnly "maven.modrinth:jei:${jei_version}"
+    modCompileOnly "maven.modrinth:emi:${emi_version}"
+
+    // Mody do testów w kliencie/serwerze z IntelliJ - trafiają do run/mods (zadanie copyTestMods),
+    // bo w środowisku dev Fabric nie ładuje bibliotek wbudowanych w jary modów z klasspath (Create ma ich kilkanaście).
+    // Nie trafiają do naszego jara. JEI i EMI naraz nie mają sensu - żeby testować JEI, zamień emi na jei.
+    [
+            "maven.modrinth:create-fabric:${create_version}",
+            "maven.modrinth:numismatics:${numismatics_version}",
+            "maven.modrinth:createaddition:${createaddition_version}",
+            "maven.modrinth:create-new-age:${create_new_age_version}",
+            "maven.modrinth:create-more-additions:${create_more_additions_version}",
+            "maven.modrinth:ae2:${ae2_version}",
+            "dev.ftb.mods:ftb-ultimine-fabric:${ftb_ultimine_version}",
+            "dev.ftb.mods:ftb-library-fabric:${ftb_library_version}",
+            "dev.architectury:architectury-fabric:${architectury_version}",
+            "maven.modrinth:trinkets:${trinkets_version}",
+            "maven.modrinth:universal-graves:${universal_graves_version}",
+            "maven.modrinth:emi:${emi_version}",
+    ].each { testMods(it) { transitive = false } }
+}
+
+// Kopiuje mody testowe do run/mods przed uruchomieniem klienta lub serwera z IntelliJ.
+// Inne pliki w run/mods (np. dodane ręcznie) zostają.
+def copyTestMods = tasks.register("copyTestMods", Copy) {
+    from configurations.testMods
+    into file("run/mods")
+}
+tasks.matching { it.name in ["runClient", "runServer"] }.configureEach {
+    dependsOn copyTestMods
+}
+
+// Podstawia wartości z gradle.properties do fabric.mod.json
+processResources {
+    var replaceProperties = [
+            version          : mod_version,
+            mod_id           : mod_id,
+            mod_name         : mod_name,
+            mod_license      : mod_license,
+            mod_authors      : mod_authors,
+            mod_description  : mod_description,
+            minecraft_version: minecraft_version,
+            loader_min_version: loader_min_version,
+    ]
+    inputs.properties replaceProperties
+    filesMatching("fabric.mod.json") {
+        expand replaceProperties
+    }
+}
+
+// Minecraft 1.20.1 wymaga Javy 17
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+// Plik licencji w jarze (jako LICENSE_merchantry, żeby nie kolidował z innymi modami w modpacku)
+def licenseName = "LICENSE_${mod_id}"
+tasks.named('jar', Jar).configure {
+    from('LICENSE') {
+        rename { licenseName }
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
