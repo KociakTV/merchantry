@@ -21,6 +21,22 @@ sourceSets.main.resources {
 }
 
 repositories {
+    // FTB Ultimine i FTB Library
+    maven {
+        name = "FTB"
+        url = "https://maven.ftb.dev/releases"
+        content {
+            includeGroup "dev.ftb.mods"
+        }
+    }
+    // Architectury - wymagane przez FTB Library
+    maven {
+        name = "Architectury"
+        url = "https://maven.architectury.dev"
+        content {
+            includeGroup "dev.architectury"
+        }
+    }
     // Modrinth - Create i Create: Numismatics
     exclusiveContent {
         forRepository {
@@ -56,6 +72,10 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // gradlew runClient -PquickPlay=localhost - klient od razu łączy się z serwerem testowym
+            if (project.hasProperty('quickPlay')) {
+                programArguments.addAll '--quickPlayMultiplayer', project.property('quickPlay').toString()
+            }
         }
 
         server {
@@ -103,6 +123,12 @@ dependencies {
     compileOnly "maven.modrinth:create:${create_version}"
     compileOnly "maven.modrinth:numismatics:${numismatics_version}"
 
+    // FTB Ultimine (kupowane prawo do ultimine), Curios (sloty przy ładunku keepInventory),
+    // You're in Grave Danger (bez grobu po uratowanej śmierci) - też opcjonalne
+    compileOnly "dev.ftb.mods:ftb-ultimine-neoforge:${ftb_ultimine_version}"
+    compileOnly "maven.modrinth:curios:${curios_version}"
+    compileOnly "maven.modrinth:yigd:${yigd_version}"
+
     // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
     compileOnly "maven.modrinth:jei:${jei_version}"
     compileOnly "maven.modrinth:emi:${emi_version}"
@@ -112,6 +138,14 @@ dependencies {
     localRuntime "maven.modrinth:create:${create_version}"
     localRuntime "maven.modrinth:numismatics:${numismatics_version}"
     localRuntime "maven.modrinth:emi:${emi_version}"
+    localRuntime "maven.modrinth:createaddition:${createaddition_version}"
+    localRuntime "maven.modrinth:ae2:${ae2_version}"
+    localRuntime "maven.modrinth:guideme:${guideme_version}"
+    localRuntime "dev.ftb.mods:ftb-ultimine-neoforge:${ftb_ultimine_version}"
+    localRuntime "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
+    localRuntime "dev.architectury:architectury-neoforge:${architectury_version}"
+    localRuntime "maven.modrinth:curios:${curios_version}"
+    localRuntime "maven.modrinth:gravestone-mod:${gravestone_version}"
 }
 
 // Podstawia wartości z gradle.properties do neoforge.mods.toml

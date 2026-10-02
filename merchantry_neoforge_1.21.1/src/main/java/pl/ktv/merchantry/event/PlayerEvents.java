@@ -65,6 +65,7 @@ public final class PlayerEvents {
         Lang.setContext(player);
         if (Economy.isEnabled()) {
             Earnings.tick(player);
+            Economy.syncPayoutScores(player);
         }
         Sidebar.update(player);
     }

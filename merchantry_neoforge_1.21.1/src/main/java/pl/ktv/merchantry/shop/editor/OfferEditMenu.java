@@ -239,14 +239,15 @@ public class OfferEditMenu extends GuiMenu {
     private boolean special() {
         if (offer.type == OfferType.UNLOCK) {
             Unlock current = Unlock.byId(offer.unlock);
-            Unlock next = Unlock.values()[current == null ? 0 : (current.ordinal() + 1) % Unlock.values().length];
+            List<Unlock> unlocks = Unlock.available();
+            Unlock next = unlocks.get(current == null ? 0 : (unlocks.indexOf(current) + 1) % unlocks.size());
             // Domyślną nazwę i opis zmieniamy razem z odblokowaniem; własne zostawiamy
             if (current != null && offer.name.equals("@default.unlock." + current.id())) {
                 offer.name = "@default.unlock." + next.id();
             }
-            if (current != null && offer.description.equals(List.of("@default.unlock.desc:" + current.id()))) {
+            if (current != null && offer.description.equals(List.of(current.defaultDescription()))) {
                 offer.description.clear();
-                offer.description.add("@default.unlock.desc:" + next.id());
+                offer.description.add(next.defaultDescription());
             }
             offer.unlock = next.id();
             return true;

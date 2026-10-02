@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.1.0 (NeoForge 1.21.1, Fabric 1.21.1) — mod compatibility
+Brings the compatibility from the Fabric 1.20.1 release to Minecraft 1.21.1.
+
+**NeoForge 1.21.1**
+- Default shop and sell offers for Create, Create Crafts & Additions, Create: New Age, Create: Crafts & (More) Additions and Applied Energistics 2 (including the Mysterious Cube and blank patterns)
+- FTB Ultimine as a permanent unlock bought in the shop (`ultimineRequiresUnlock`)
+- keepInventory charges also keep **Curios** slots and prevent graves from **Gravestone**, **Corpse** and **You're in Grave Danger** (`blockGraves`)
+
+**Fabric 1.21.1**
+- FTB Ultimine as a permanent unlock bought in the shop (`ultimineRequiresUnlock`)
+- keepInventory charges also keep **Trinkets** slots and prevent graves from **Universal Graves** and **You're in Grave Danger** (`blockGraves`)
+- Create and AE2 have no Fabric 1.21.1 release, so there are no offers for them on this version
+
+**Both**
+- No death waypoint after a saved death: FTB Chunks, plus Xaero's Minimap and JourneyMap when the player has Merchantry on the client (`hideDeathWaypoints`)
+- Payouts left today (`merchantry_payouts_left`) and seconds to the next payout (`merchantry_next_payout`) as scoreboard objectives for leaderboard mods
+- Default offers are added once, the first time the server starts with the mod; offers you remove never come back
+- All compatibility is optional — Merchantry works without any of these mods
+
 ## 1.1.0 (Fabric 1.20.1) — Fabric 1.20.1 release with mod compatibility
 First version for **Minecraft 1.20.1** (Fabric, requires Fabric API). Includes everything from 1.0.0 plus:
 

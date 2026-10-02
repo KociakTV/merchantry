@@ -14,6 +14,8 @@ public final class Config {
     public static final ModConfigSpec.LongValue STARTING_BALANCE;
     public static final ModConfigSpec.ConfigValue<String> SCOREBOARD_OBJECTIVE;
     public static final ModConfigSpec.BooleanValue ENABLE_SIDEBAR;
+    public static final ModConfigSpec.ConfigValue<String> PAYOUTS_LEFT_OBJECTIVE;
+    public static final ModConfigSpec.ConfigValue<String> NEXT_PAYOUT_OBJECTIVE;
 
     public static final ModConfigSpec.LongValue ADVANCEMENT_TASK_REWARD;
     public static final ModConfigSpec.LongValue ADVANCEMENT_GOAL_REWARD;
@@ -32,6 +34,11 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue HOME_PRICE_MULTIPLIER;
     public static final ModConfigSpec.IntValue MAX_PURCHASE_QUANTITY;
     public static final ModConfigSpec.IntValue MAX_KEEP_INVENTORY_CHARGES;
+
+    public static final ModConfigSpec.BooleanValue BLOCK_GRAVES;
+    public static final ModConfigSpec.BooleanValue HIDE_DEATH_WAYPOINTS;
+
+    public static final ModConfigSpec.BooleanValue ULTIMINE_REQUIRES_UNLOCK;
 
     public static final ModConfigSpec.BooleanValue ENABLE_MARKET;
     public static final ModConfigSpec.DoubleValue MARKET_FEE_PERCENT;
@@ -74,6 +81,12 @@ public final class Config {
                 .comment("Shows each player their own sidebar: name, balance, time to next payout, payouts left today.",
                         "Players can hide it with /sidebar.")
                 .define("enableSidebar", true);
+        PAYOUTS_LEFT_OBJECTIVE = BUILDER
+                .comment("Scoreboard objective with the number of playtime payouts left today, for leaderboard mods (empty = disabled)")
+                .define("payoutsLeftObjective", "merchantry_payouts_left");
+        NEXT_PAYOUT_OBJECTIVE = BUILDER
+                .comment("Scoreboard objective with seconds until the next playtime payout, for leaderboard mods (empty = disabled)")
+                .define("nextPayoutObjective", "merchantry_next_payout");
         BUILDER.pop();
 
         BUILDER.push("earning");
@@ -130,6 +143,17 @@ public final class Config {
                 .defineInRange("maxKeepInventoryCharges", 0, 0, 100_000);
         BUILDER.pop();
 
+        BUILDER.push("keepInventory");
+        BLOCK_GRAVES = BUILDER
+                .comment("No grave when a keepInventory charge saved the inventory (Gravestone, Corpse, You're in Grave Danger",
+                        "and other grave mods that use the drops event)")
+                .define("blockGraves", true);
+        HIDE_DEATH_WAYPOINTS = BUILDER
+                .comment("No death waypoint when a keepInventory charge saved the inventory: FTB Chunks always,",
+                        "Xaero's Minimap and JourneyMap when the player also has Merchantry installed on the client")
+                .define("hideDeathWaypoints", true);
+        BUILDER.pop();
+
         BUILDER.push("market");
         ENABLE_MARKET = BUILDER
                 .comment("Player market /market: players list their own items for $ (requires currency)")
@@ -153,6 +177,13 @@ public final class Config {
         EXCHANGE_FEE_PERCENT = BUILDER
                 .comment("Exchange fee in percent, taken on every exchange (0 = no fee)")
                 .defineInRange("exchangeFeePercent", 0.0, 0.0, 100.0);
+        BUILDER.pop();
+
+        BUILDER.push("compat");
+        ULTIMINE_REQUIRES_UNLOCK = BUILDER
+                .comment("FTB Ultimine works only for players who bought the \"ultimine\" unlock in the shop",
+                        "(operators too, when opsBypassUnlocks is enabled). false = everyone can use ultimine.")
+                .define("ultimineRequiresUnlock", true);
         BUILDER.pop();
 
         BUILDER.push("repair");

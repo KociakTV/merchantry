@@ -77,6 +77,8 @@
   "sidebar.payouts_left": "§7Wypłat dzisiaj: §f%s",
   "sidebar.hidden": "§7Panel boczny ukryty. Wpisz §f/sidebar§7, aby go pokazać.",
   "sidebar.shown": "§aPanel boczny włączony.",
+  "scoreboard.payouts_left": "Wypłaty do końca dnia",
+  "scoreboard.next_payout": "Sekundy do wypłaty",
 
   "exchange.title": "§2§lKantor",
   "exchange.open_hint": "§7Wymiana $ na monety Create: Numismatics i odwrotnie",
@@ -259,6 +261,8 @@
   "default.unlock.grindstone": "Kamień szlifierski na zawsze",
   "default.unlock.loom": "Krosno na zawsze",
   "default.unlock.cartography": "Stół kartograficzny na zawsze",
+  "default.unlock.ultimine": "FTB Ultimine na zawsze",
+  "default.unlock.ultimine.desc": "Stały dostęp do FTB Ultimine (kopanie całych żył naraz)",
   "default.unlock.desc": "Stały dostęp do komendy /%s",
   "default.home_slot": "Dodatkowy dom",
   "default.home_slot.desc": "Zwiększa limit domów o 1",

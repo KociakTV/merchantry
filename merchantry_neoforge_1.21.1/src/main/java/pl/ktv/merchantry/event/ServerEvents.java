@@ -47,6 +47,8 @@ public final class ServerEvents {
     public static void onServerStarted(ServerStartedEvent event) {
         ShopManager.load(event.getServer());
         pl.ktv.merchantry.shop.sell.SellManager.load();
+        // Domyślne oferty dla zainstalowanych modów (Create, AE2, FTB Ultimine...) - raz na mod
+        pl.ktv.merchantry.compat.CompatOffers.apply();
     }
 
     @SubscribeEvent

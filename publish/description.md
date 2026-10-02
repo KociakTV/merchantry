@@ -58,7 +58,7 @@ Available for **NeoForge 1.21.1**, **Fabric 1.21.1** and **Fabric 1.20.1**.
 *   Configurable exchange rate and fee
 *   Not available on Fabric 1.21.1 — Create: Numismatics has no Fabric release for that version
 
-### 🧩 Mod compatibility (Fabric 1.20.1)
+### 🧩 Mod compatibility
 
 *   **Default shop and sell offers** added automatically the first time the server starts with the mod (removed offers never come back):
     *   **Create** — andesite, andesite alloy, zinc, copper, brass
@@ -66,10 +66,12 @@ Available for **NeoForge 1.21.1**, **Fabric 1.21.1** and **Fabric 1.20.1**.
     *   **Applied Energistics 2** — certus quartz, charged certus, fluix, silicon, sky stone, blank patterns and the **Mysterious Cube** (inscriber presses) for a higher price
 *   **FTB Ultimine** — ultimine can be a permanent unlock bought in the shop (`ultimineRequiresUnlock`)
 *   **keepInventory charges** work with:
-    *   **Trinkets** — trinket slots are kept too
-    *   **Universal Graves**, **You're in Grave Danger** — no grave when a charge saved your items (`blockGraves`)
+    *   **Trinkets** (Fabric) and **Curios** (NeoForge) — accessory slots are kept too
+    *   **Graves** — no grave when a charge saved your items (`blockGraves`): Universal Graves and You're in Grave Danger (Fabric); Gravestone, Corpse and You're in Grave Danger (NeoForge)
     *   **FTB Chunks** — no death waypoint; **Xaero's Minimap** and **JourneyMap** too when the player has Merchantry on the client (`hideDeathWaypoints`)
 *   **Leaderboards** — balance, payouts left today and seconds to the next payout are scoreboard objectives, ready for leaderboard and hologram mods or datapacks
+
+Create and AE2 only exist on NeoForge 1.21.1 and Fabric 1.20.1, so their offers and `/exchange` are not available on Fabric 1.21.1.
 
 ### 🛠️ Admin tools
 
@@ -93,7 +95,7 @@ Available for **NeoForge 1.21.1**, **Fabric 1.21.1** and **Fabric 1.20.1**.
 | <code>config/merchantry-server.toml</code> |currency, earnings, homes, repairs, market, exchange (NeoForge), language |
 | <code>config/merchantry_offers.json</code> |shop offers (edit in-game with <code>/shopconfig</code>)                  |
 | <code>config/merchantry_sell.json</code> |items the server buys and their prices                                    |
-| <code>config/merchantry_compat_offers.json</code> |which mods already got their default offers (Fabric 1.20.1)  |
+| <code>config/merchantry_compat_offers.json</code> |which mods already got their default offers  |
 
 Admin commands require permission level 2 (operator).
 
@@ -103,7 +105,7 @@ Admin commands require permission level 2 (operator).
 *   Minecraft **1.20.1** — **Fabric** Loader 0.15+ with [Fabric API](https://modrinth.com/mod/fabric-api)
 *   Server-side. The client mod is **optional** (only needed for JEI/EMI drag & drop in the editor)
 
-**Optional compatibility:** [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) and [EMI](https://www.curseforge.com/minecraft/mc-mods/emi) (all versions), [Create: Numismatics](https://www.curseforge.com/minecraft/mc-mods/numismatics) (NeoForge 1.21.1, Fabric 1.20.1); Fabric 1.20.1 only: Create and addons, Applied Energistics 2, FTB Ultimine, Trinkets, Universal Graves, You're in Grave Danger, FTB Chunks, Xaero's Minimap, JourneyMap
+**Optional compatibility:** JEI, EMI, FTB Ultimine, FTB Chunks, Xaero's Minimap, JourneyMap, You're in Grave Danger (all versions); Create and addons, Create: Numismatics, Applied Energistics 2 (NeoForge 1.21.1, Fabric 1.20.1); Curios, Gravestone, Corpse (NeoForge); Trinkets, Universal Graves (Fabric)
 
 ## 📜 License
 

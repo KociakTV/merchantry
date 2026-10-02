@@ -8,8 +8,9 @@ Pliki w tym folderze:
 
 Pliki do wysłania (zwykłe jary, **bez** `-sources`):
 - NeoForge: `merchantry_neoforge_1.21.1/build/libs/merchantry_neoforge_1.21.1-<wersja>.jar`
+  — opcjonalne (Optional): Create, Create: Numismatics, Applied Energistics 2, FTB Ultimine, Curios, Gravestone, Corpse, You're in Grave Danger
 - Fabric: `merchantry_fabric_1.21.1/build/libs/merchantry_fabric_1.21.1-<wersja>.jar`
-  — loader Fabric, tylko Minecraft 1.21.1, zależność **Fabric API** (Required), bez Numismatics
+  — loader Fabric, tylko Minecraft 1.21.1, zależność **Fabric API** (Required), bez Numismatics; opcjonalne (Optional): FTB Ultimine, Trinkets, Universal Graves, You're in Grave Danger
 - Fabric 1.20.1: `merchantry_fabric_1.20.1/build/libs/merchantry_fabric_1.20.1-<wersja>.jar`
   — loader Fabric (i Quilt), tylko Minecraft 1.20.1, zależność **Fabric API** (Required); opcjonalne (Optional):
   Create Fabric, Create: Numismatics, Applied Energistics 2, FTB Ultimine, Trinkets, Universal Graves, You're in Grave Danger

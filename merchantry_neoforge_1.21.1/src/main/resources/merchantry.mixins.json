@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "pl.ktv.merchantry.mixin",
+  "plugin": "pl.ktv.merchantry.compat.MerchantryMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "compat.FtbChunksMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
