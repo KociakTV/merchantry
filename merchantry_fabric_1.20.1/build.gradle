@@ -74,11 +74,6 @@ loom {
     accessWidenerPath = file("src/main/resources/${mod_id}.accesswidener")
 }
 
-configurations {
-    // Mody testowe kopiowane do run/mods (patrz copyTestMods)
-    testMods
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered() {
@@ -106,33 +101,116 @@ dependencies {
     modCompileOnly "maven.modrinth:jei:${jei_version}"
     modCompileOnly "maven.modrinth:emi:${emi_version}"
 
-    // Mody do testów w kliencie/serwerze z IntelliJ - trafiają do run/mods (zadanie copyTestMods),
-    // bo w środowisku dev Fabric nie ładuje bibliotek wbudowanych w jary modów z klasspath (Create ma ich kilkanaście).
-    // Nie trafiają do naszego jara. JEI i EMI naraz nie mają sensu - żeby testować JEI, zamień emi na jei.
-    [
-            "maven.modrinth:create-fabric:${create_version}",
-            "maven.modrinth:numismatics:${numismatics_version}",
-            "maven.modrinth:createaddition:${createaddition_version}",
-            "maven.modrinth:create-new-age:${create_new_age_version}",
-            "maven.modrinth:create-more-additions:${create_more_additions_version}",
-            "maven.modrinth:ae2:${ae2_version}",
-            "dev.ftb.mods:ftb-ultimine-fabric:${ftb_ultimine_version}",
-            "dev.ftb.mods:ftb-library-fabric:${ftb_library_version}",
-            "dev.architectury:architectury-fabric:${architectury_version}",
-            "maven.modrinth:trinkets:${trinkets_version}",
-            "maven.modrinth:universal-graves:${universal_graves_version}",
-            "maven.modrinth:emi:${emi_version}",
-    ].each { testMods(it) { transitive = false } }
+    // Mody do testów w kliencie/serwerze z IntelliJ (nie trafiają do naszego jara) - lista w testModUrls().
+    // JEI i EMI naraz nie mają sensu - żeby testować JEI, zamień emi na jei.
+
+    // Mody testowe idą na klasspath (Loom przemapowuje je raz przy budowaniu). Nie wrzucamy ich do run/mods,
+    // bo loader przemapowuje stamtąd mody przy każdym starcie i przy dużych modach (Create, AE2) zdarza mu się
+    // wyścig wątków: "Failed to remap mods! ClosedFileSystemException".
+    // Loom usuwa z przemapowanych modów wbudowane biblioteki (jar-in-jar), więc wypakowujemy je sami.
+    testModFiles().each { modLocalRuntime files(it) }
 }
 
-// Kopiuje mody testowe do run/mods przed uruchomieniem klienta lub serwera z IntelliJ.
-// Inne pliki w run/mods (np. dodane ręcznie) zostają.
-def copyTestMods = tasks.register("copyTestMods", Copy) {
-    from configurations.testMods
-    into file("run/mods")
+// Mody testowe: pobierane wprost z mavenów (rozwiązywanie zależności Gradle w tym miejscu psuje konfigurację Loom).
+def testModUrls() {
+    def modrinth = { String slug, String version -> "https://api.modrinth.com/maven/maven/modrinth/${slug}/${version}/${slug}-${version}.jar" }
+    def ftb = { String artifact, String version -> "https://maven.ftb.dev/releases/dev/ftb/mods/${artifact}/${version}/${artifact}-${version}.jar" }
+    return [
+            modrinth("create-fabric", create_version),
+            modrinth("numismatics", numismatics_version),
+            modrinth("createaddition", createaddition_version),
+            modrinth("create-new-age", create_new_age_version),
+            modrinth("create-more-additions", create_more_additions_version),
+            modrinth("ae2", ae2_version),
+            ftb("ftb-ultimine-fabric", ftb_ultimine_version),
+            ftb("ftb-library-fabric", ftb_library_version),
+            "https://maven.architectury.dev/dev/architectury/architectury-fabric/${architectury_version}/architectury-fabric-${architectury_version}.jar",
+            modrinth("trinkets", trinkets_version),
+            modrinth("universal-graves", universal_graves_version),
+            modrinth("emi", emi_version),
+    ]
 }
-tasks.matching { it.name in ["runClient", "runServer"] }.configureEach {
-    dependsOn copyTestMods
+
+// Pobiera plik do cache (z ponawianiem - sieć bywa niestabilna)
+def downloadCached(String url, File dir) {
+    def target = new File(dir, url.tokenize("/").last())
+    if (target.exists() && target.length() > 0) {
+        return target
+    }
+    dir.mkdirs()
+    def temp = new File(dir, target.name + ".part")
+    for (int attempt = 1; attempt <= 5; attempt++) {
+        try {
+            def connection = new URL(url).openConnection()
+            connection.setRequestProperty("User-Agent", "merchantry-dev")
+            connection.connectTimeout = 30000
+            connection.readTimeout = 120000
+            temp.withOutputStream { out -> connection.inputStream.withStream { out << it } }
+            temp.renameTo(target)
+            return target
+        } catch (IOException e) {
+            if (attempt == 5) {
+                throw new GradleException("Nie udało się pobrać ${url}", e)
+            }
+            Thread.sleep(3000L * attempt)
+        }
+    }
+}
+
+// Mody testowe razem z wbudowanymi w nie bibliotekami (także zagnieżdżonymi), po jednej wersji każdego moda.
+// Pomijamy to, co już dostarcza loader i Fabric API.
+def testModFiles() {
+    def modsDir = layout.buildDirectory.dir("testMods").get().asFile
+    def outDir = layout.buildDirectory.dir("testModsNested").get().asFile
+    outDir.mkdirs()
+    // Moduły Fabric API mają ID "fabric-..." (ale fabric-permissions-api to osobna biblioteka)
+    def provided = { String id ->
+        id in ["minecraft", "java", "fabricloader", "mixinextras", "fabric-api"]
+                || (id.startsWith("fabric-") && !id.startsWith("fabric-permissions-api"))
+    }
+    def compareVersions = { String a, String b ->
+        def pa = a.findAll(/\d+/).collect { it as long }
+        def pb = b.findAll(/\d+/).collect { it as long }
+        for (int i = 0; i < Math.min(pa.size(), pb.size()); i++) {
+            if (pa[i] != pb[i]) return pa[i] <=> pb[i]
+        }
+        return pa.size() <=> pb.size()
+    }
+    Map<String, Map> chosen = [:]
+    List<File> libraries = []
+    def visit
+    visit = { File jar ->
+        def zip = new java.util.zip.ZipFile(jar)
+        try {
+            def metaEntry = zip.getEntry("fabric.mod.json")
+            if (metaEntry == null) {
+                libraries << jar
+                return
+            }
+            def meta = new groovy.json.JsonSlurper().parse(zip.getInputStream(metaEntry), "UTF-8")
+            String id = meta.id
+            String version = meta.version ?: "0"
+            if (!provided(id)) {
+                def current = chosen[id]
+                if (current == null || compareVersions(version, current.version) > 0) {
+                    chosen[id] = [version: version, file: jar]
+                }
+            }
+            (meta.jars ?: []).each { nested ->
+                def entry = zip.getEntry(nested.file)
+                if (entry == null) return
+                def target = new File(outDir, entry.name.tokenize("/").last())
+                if (!target.exists() || target.length() != entry.size) {
+                    target.withOutputStream { it << zip.getInputStream(entry) }
+                }
+                visit(target)
+            }
+        } finally {
+            zip.close()
+        }
+    }
+    testModUrls().each { visit(downloadCached(it, modsDir)) }
+    return chosen.values().collect { it.file } + libraries.unique()
 }
 
 // Podstawia wartości z gradle.properties do fabric.mod.json
