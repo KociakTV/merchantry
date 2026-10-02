@@ -52,7 +52,7 @@ Available for **NeoForge 1.21.1**, **Fabric 1.21.1** and **Fabric 1.20.1**.
 *   `/sethome`, `/home`, `/delhome`, `/homes`
 *   One home by default, more can be bought in the shop (up to a configurable limit)
 
-### 🪙 Create: Numismatics compatibility (optional — NeoForge 1.21.1 and Fabric 1.20.1)
+### 🪙 Create: Numismatics compatibility (NeoForge 1.21.1 and Fabric 1.20.1)
 
 *   `/exchange` — convert **$ ↔ Numismatics bank balance** and deposit coins from your inventory
 *   Configurable exchange rate and fee
