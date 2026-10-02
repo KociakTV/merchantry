@@ -119,7 +119,10 @@ def testModUrls() {
             modrinth("create-fabric", create_version),
             modrinth("numismatics", numismatics_version),
             modrinth("createaddition", createaddition_version),
-            modrinth("create-new-age", create_new_age_version),
+            // Create: New Age celowo pominięty: w środowisku dev jego dźwięk geiger_counter rejestruje się tylko
+            // po jednej stronie (zależy od kolejności inicjalizacji z Create) i klient nie może wejść na serwer.
+            // Oferty New Age sprawdzone na samym serwerze; do testu dopisz linię z powrotem i uruchamiaj tylko serwer.
+            // modrinth("create-new-age", create_new_age_version),
             modrinth("create-more-additions", create_more_additions_version),
             modrinth("ae2", ae2_version),
             ftb("ftb-ultimine-fabric", ftb_ultimine_version),
