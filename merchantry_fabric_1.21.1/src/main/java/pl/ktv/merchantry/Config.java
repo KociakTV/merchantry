@@ -29,6 +29,8 @@ public final class Config {
     public static final Value<Long> STARTING_BALANCE;
     public static final Value<String> SCOREBOARD_OBJECTIVE;
     public static final Value<Boolean> ENABLE_SIDEBAR;
+    public static final Value<String> PAYOUTS_LEFT_OBJECTIVE;
+    public static final Value<String> NEXT_PAYOUT_OBJECTIVE;
 
     public static final Value<Long> ADVANCEMENT_TASK_REWARD;
     public static final Value<Long> ADVANCEMENT_GOAL_REWARD;
@@ -47,6 +49,11 @@ public final class Config {
     public static final Value<Double> HOME_PRICE_MULTIPLIER;
     public static final Value<Integer> MAX_PURCHASE_QUANTITY;
     public static final Value<Integer> MAX_KEEP_INVENTORY_CHARGES;
+
+    public static final Value<Boolean> BLOCK_GRAVES;
+    public static final Value<Boolean> HIDE_DEATH_WAYPOINTS;
+
+    public static final Value<Boolean> ULTIMINE_REQUIRES_UNLOCK;
 
     public static final Value<Boolean> ENABLE_MARKET;
     public static final Value<Double> MARKET_FEE_PERCENT;
@@ -75,6 +82,10 @@ public final class Config {
         ENABLE_SIDEBAR = define("enableSidebar", true,
                 "Shows each player their own sidebar: name, balance, time to next payout, payouts left today.",
                 "Players can hide it with /sidebar.");
+        PAYOUTS_LEFT_OBJECTIVE = define("payoutsLeftObjective", "merchantry_payouts_left",
+                "Scoreboard objective with the number of playtime payouts left today, for leaderboard mods (empty = disabled)");
+        NEXT_PAYOUT_OBJECTIVE = define("nextPayoutObjective", "merchantry_next_payout",
+                "Scoreboard objective with seconds until the next playtime payout, for leaderboard mods (empty = disabled)");
 
         section("earning");
         ADVANCEMENT_TASK_REWARD = defineInRange("advancementTaskReward", 10L, 0L, Long.MAX_VALUE,
@@ -112,6 +123,14 @@ public final class Config {
         MAX_KEEP_INVENTORY_CHARGES = defineInRange("maxKeepInventoryCharges", 0, 0, 100_000,
                 "Maximum number of keepInventory charges a player can hold (0 = no limit)");
 
+        section("keepInventory");
+        BLOCK_GRAVES = define("blockGraves", true,
+                "No grave when a keepInventory charge saved the inventory (Universal Graves, You're in Grave Danger).",
+                "Other grave mods (Gravestones, Forgotten Graves) get an empty inventory anyway.");
+        HIDE_DEATH_WAYPOINTS = define("hideDeathWaypoints", true,
+                "No death waypoint when a keepInventory charge saved the inventory: FTB Chunks always,",
+                "Xaero's Minimap and JourneyMap when the player also has Merchantry installed on the client");
+
         section("market");
         ENABLE_MARKET = define("enableMarket", true,
                 "Player market /market: players list their own items for $ (requires currency)");
@@ -119,6 +138,11 @@ public final class Config {
                 "Fee in percent taken from the seller's earnings (0 = no fee)");
         MAX_MARKET_LISTINGS = defineInRange("maxListingsPerPlayer", 10, 1, 1000,
                 "Maximum number of active listings per player");
+
+        section("compat");
+        ULTIMINE_REQUIRES_UNLOCK = define("ultimineRequiresUnlock", true,
+                "FTB Ultimine works only for players who bought the \"ultimine\" unlock in the shop",
+                "(operators too, when opsBypassUnlocks is enabled). false = everyone can use ultimine.");
 
         section("repair");
         REPAIR_COST_PER_PERCENT = defineInRange("repairCostPerPercent", 2.0, 0.0, 1_000_000.0,

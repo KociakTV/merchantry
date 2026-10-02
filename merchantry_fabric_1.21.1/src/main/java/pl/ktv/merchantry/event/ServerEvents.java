@@ -3,6 +3,7 @@ package pl.ktv.merchantry.event;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import pl.ktv.merchantry.Config;
+import pl.ktv.merchantry.compat.CompatOffers;
 import pl.ktv.merchantry.command.HomeCommands;
 import pl.ktv.merchantry.command.KeepInventoryCommand;
 import pl.ktv.merchantry.command.MarketCommand;
@@ -37,6 +38,8 @@ public final class ServerEvents {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ShopManager.load(server);
             SellManager.load();
+            // Domyślne oferty dla zainstalowanych modów (np. FTB Ultimine) - raz na mod
+            CompatOffers.apply();
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ShopManager.unload());
     }

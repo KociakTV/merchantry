@@ -77,6 +77,8 @@
   "sidebar.payouts_left": "§7Payouts left today: §f%s",
   "sidebar.hidden": "§7Sidebar hidden. Type §f/sidebar§7 to show it.",
   "sidebar.shown": "§aSidebar shown.",
+  "scoreboard.payouts_left": "Payouts left today",
+  "scoreboard.next_payout": "Seconds to next payout",
 
 
   "keepinv.charges": "§7keepInventory charges: §f%s",
@@ -238,6 +240,8 @@
   "default.unlock.grindstone": "Grindstone forever",
   "default.unlock.loom": "Loom forever",
   "default.unlock.cartography": "Cartography table forever",
+  "default.unlock.ultimine": "FTB Ultimine forever",
+  "default.unlock.ultimine.desc": "Permanent access to FTB Ultimine (mine whole veins at once)",
   "default.unlock.desc": "Permanent access to /%s",
   "default.home_slot": "Extra home",
   "default.home_slot.desc": "Increases your home limit by 1",

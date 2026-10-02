@@ -191,7 +191,7 @@ public final class ShopManager {
             }
             case UNLOCK -> {
                 Unlock unlock = Unlock.CRAFT;
-                for (Unlock candidate : Unlock.values()) {
+                for (Unlock candidate : Unlock.available()) {
                     if (OFFERS.stream().noneMatch(o -> candidate.id().equals(o.unlock))) {
                         unlock = candidate;
                         break;
@@ -200,7 +200,7 @@ public final class ShopManager {
                 ShopOffer o = new ShopOffer("", type);
                 o.unlock = unlock.id();
                 o.name = "@default.unlock." + unlock.id();
-                o.description.add("@default.unlock.desc:" + unlock.id());
+                o.description.add(unlock.defaultDescription());
                 yield o;
             }
             case HOME_SLOT -> {
@@ -260,7 +260,7 @@ public final class ShopManager {
         ShopOffer offer = new ShopOffer(unlock.id(), OfferType.UNLOCK);
         offer.unlock = unlock.id();
         offer.name = "@default.unlock." + unlock.id();
-        offer.description.add("@default.unlock.desc:" + unlock.id());
+        offer.description.add(unlock.defaultDescription());
         offer.moneyPrice = money;
         offer.itemPrice = new ItemPrice(Items.DIAMOND, diamonds);
         return offer;

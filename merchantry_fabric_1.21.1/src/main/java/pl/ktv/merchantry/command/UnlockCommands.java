@@ -15,7 +15,10 @@ public final class UnlockCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        for (Unlock unlock : Unlock.values()) {
+        for (Unlock unlock : Unlock.available()) {
+            if (!unlock.hasCommand()) {
+                continue;
+            }
             dispatcher.register(Commands.literal(unlock.id()).executes(context -> open(context, unlock)));
         }
         dispatcher.register(Commands.literal("ec").executes(context -> open(context, Unlock.ENDERCHEST)));

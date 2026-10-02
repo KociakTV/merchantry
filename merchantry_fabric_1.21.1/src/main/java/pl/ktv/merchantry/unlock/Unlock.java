@@ -19,9 +19,14 @@ import net.minecraft.world.item.Items;
 import pl.ktv.merchantry.Config;
 import pl.ktv.merchantry.data.ModAttachments;
 
+import pl.ktv.merchantry.compat.Compat;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
-// Komendy kupowane na zawsze, które otwierają okno bloku bez stawiania go
+// Odblokowania kupowane na zawsze: komendy otwierające okno bloku bez stawiania go
+// oraz prawa do funkcji innych modów (np. FTB Ultimine - bez komendy)
 public enum Unlock {
     CRAFT("craft", () -> Items.CRAFTING_TABLE, "container.crafting"),
     ANVIL("anvil", () -> Items.ANVIL, "container.repair"),
@@ -30,16 +35,45 @@ public enum Unlock {
     SMITHING("smithing", () -> Items.SMITHING_TABLE, "container.upgrade"),
     GRINDSTONE("grindstone", () -> Items.GRINDSTONE, "container.grindstone_title"),
     LOOM("loom", () -> Items.LOOM, "container.loom"),
-    CARTOGRAPHY("cartography", () -> Items.CARTOGRAPHY_TABLE, "container.cartography_table");
+    CARTOGRAPHY("cartography", () -> Items.CARTOGRAPHY_TABLE, "container.cartography_table"),
+    // Prawo do używania FTB Ultimine (sprawdza je UltimineCompat); tylko gdy mod jest zainstalowany
+    ULTIMINE("ultimine", () -> Items.DIAMOND_PICKAXE, null, Compat.FTB_ULTIMINE);
 
     private final String id;
     private final Supplier<Item> icon;
     private final String titleKey;
+    private final Compat requiredMod;
 
     Unlock(String id, Supplier<Item> icon, String titleKey) {
+        this(id, icon, titleKey, null);
+    }
+
+    Unlock(String id, Supplier<Item> icon, String titleKey, Compat requiredMod) {
         this.id = id;
         this.icon = icon;
         this.titleKey = titleKey;
+        this.requiredMod = requiredMod;
+    }
+
+    // Odblokowania dostępne na tym serwerze (bez tych, których mod nie jest zainstalowany)
+    public static List<Unlock> available() {
+        List<Unlock> list = new ArrayList<>();
+        for (Unlock unlock : values()) {
+            if (unlock.requiredMod == null || unlock.requiredMod.isLoaded()) {
+                list.add(unlock);
+            }
+        }
+        return list;
+    }
+
+    // Czy odblokowanie ma własną komendę otwierającą okno (/craft, /anvil...)
+    public boolean hasCommand() {
+        return titleKey != null;
+    }
+
+    // Domyślny opis oferty (klucz tłumaczenia)
+    public String defaultDescription() {
+        return hasCommand() ? "@default.unlock.desc:" + id : "@default.unlock." + id + ".desc";
     }
 
     public String id() {
@@ -51,7 +85,7 @@ public enum Unlock {
     }
 
     public static Unlock byId(String id) {
-        for (Unlock unlock : values()) {
+        for (Unlock unlock : available()) {
             if (unlock.id.equals(id)) {
                 return unlock;
             }
@@ -115,7 +149,11 @@ public enum Unlock {
                     return true;
                 }
             };
+            case ULTIMINE -> null;
         };
+        if (constructor == null) {
+            return;
+        }
         player.openMenu(new SimpleMenuProvider(constructor, Component.translatable(titleKey)));
     }
 }

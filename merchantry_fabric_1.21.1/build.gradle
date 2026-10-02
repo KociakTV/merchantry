@@ -18,7 +18,23 @@ repositories {
         name = "ParchmentMC"
         url = "https://maven.parchmentmc.org"
     }
-    // Modrinth - JEI i EMI
+    // FTB Ultimine i FTB Library
+    maven {
+        name = "FTB"
+        url = "https://maven.ftb.dev/releases"
+        content {
+            includeGroup "dev.ftb.mods"
+        }
+    }
+    // Cardinal Components - interfejsy, z których korzysta API Trinkets
+    maven {
+        name = "Ladysnake"
+        url = "https://maven.ladysnake.org/releases"
+        content {
+            includeGroup "org.ladysnake.cardinal-components-api"
+        }
+    }
+    // Modrinth - Trinkets, groby, JEI, EMI
     exclusiveContent {
         forRepository {
             maven {
@@ -59,14 +75,126 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
-    // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert.
-    // Kompilujemy się z nimi, ale do naszego jara nie trafiają.
+    // Opcjonalna zgodność - kompilujemy się z tymi modami, ale do naszego jara nie trafiają,
+    // a Merchantry działa także bez nich.
+    // FTB Ultimine (kupowane prawo do ultimine)
+    modCompileOnly("dev.ftb.mods:ftb-ultimine-fabric:${ftb_ultimine_version}") { transitive = false }
+    // Trinkets (sloty Trinkets przy ładunku keepInventory)
+    modCompileOnly("maven.modrinth:trinkets:${trinkets_version}") { transitive = false }
+    modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}") { transitive = false }
+    // Universal Graves i You're in Grave Danger (bez grobu, gdy zadziałał ładunek keepInventory)
+    modCompileOnly("maven.modrinth:universal-graves:${universal_graves_version}") { transitive = false }
+    modCompileOnly("maven.modrinth:yigd:${yigd_version}") { transitive = false }
+
+    // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
     modCompileOnly "maven.modrinth:jei:${jei_version}"
     modCompileOnly "maven.modrinth:emi:${emi_version}"
 
-    // Mod ładowany w kliencie testowym z IntelliJ (nie trafia do naszego jara).
+    // Mody do testów w kliencie/serwerze z IntelliJ (nie trafiają do naszego jara) - lista w testModUrls().
     // JEI i EMI naraz nie mają sensu - żeby testować JEI, zamień emi na jei.
-    modLocalRuntime "maven.modrinth:emi:${emi_version}"
+
+    // Mody testowe idą na klasspath (Loom przemapowuje je raz przy budowaniu). Nie wrzucamy ich do run/mods,
+    // bo loader przemapowuje stamtąd mody przy każdym starcie i zdarza mu się wyścig wątków:
+    // "Failed to remap mods! ClosedFileSystemException".
+    // Loom usuwa z przemapowanych modów wbudowane biblioteki (jar-in-jar), więc wypakowujemy je sami.
+    testModFiles().each { modLocalRuntime files(it) }
+}
+
+
+// Mody testowe: pobierane wprost z mavenów (rozwiązywanie zależności Gradle w tym miejscu psuje konfigurację Loom).
+def testModUrls() {
+    def modrinth = { String slug, String version -> "https://api.modrinth.com/maven/maven/modrinth/${slug}/${version}/${slug}-${version}.jar" }
+    def ftb = { String artifact, String version -> "https://maven.ftb.dev/releases/dev/ftb/mods/${artifact}/${version}/${artifact}-${version}.jar" }
+    return [
+            ftb("ftb-ultimine-fabric", ftb_ultimine_version),
+            ftb("ftb-library-fabric", ftb_library_version),
+            "https://maven.architectury.dev/dev/architectury/architectury-fabric/${architectury_version}/architectury-fabric-${architectury_version}.jar",
+            modrinth("trinkets", trinkets_version),
+            modrinth("universal-graves", universal_graves_version),
+            modrinth("emi", emi_version),
+    ]
+}
+
+// Pobiera plik do cache (z ponawianiem - sieć bywa niestabilna)
+def downloadCached(String url, File dir) {
+    def target = new File(dir, url.tokenize("/").last())
+    if (target.exists() && target.length() > 0) {
+        return target
+    }
+    dir.mkdirs()
+    def temp = new File(dir, target.name + ".part")
+    for (int attempt = 1; attempt <= 5; attempt++) {
+        try {
+            def connection = new URL(url).openConnection()
+            connection.setRequestProperty("User-Agent", "merchantry-dev")
+            connection.connectTimeout = 30000
+            connection.readTimeout = 120000
+            temp.withOutputStream { out -> connection.inputStream.withStream { out << it } }
+            temp.renameTo(target)
+            return target
+        } catch (IOException e) {
+            if (attempt == 5) {
+                throw new GradleException("Nie udało się pobrać ${url}", e)
+            }
+            Thread.sleep(3000L * attempt)
+        }
+    }
+}
+
+// Mody testowe razem z wbudowanymi w nie bibliotekami (także zagnieżdżonymi), po jednej wersji każdego moda.
+// Pomijamy to, co już dostarcza loader i Fabric API.
+def testModFiles() {
+    def modsDir = layout.buildDirectory.dir("testMods").get().asFile
+    def outDir = layout.buildDirectory.dir("testModsNested").get().asFile
+    outDir.mkdirs()
+    // Moduły Fabric API mają ID "fabric-..." (ale fabric-permissions-api to osobna biblioteka)
+    def provided = { String id ->
+        id in ["minecraft", "java", "fabricloader", "mixinextras", "fabric-api"]
+                || (id.startsWith("fabric-") && !id.startsWith("fabric-permissions-api"))
+    }
+    def compareVersions = { String a, String b ->
+        def pa = a.findAll(/\d+/).collect { it as long }
+        def pb = b.findAll(/\d+/).collect { it as long }
+        for (int i = 0; i < Math.min(pa.size(), pb.size()); i++) {
+            if (pa[i] != pb[i]) return pa[i] <=> pb[i]
+        }
+        return pa.size() <=> pb.size()
+    }
+    Map<String, Map> chosen = [:]
+    List<File> libraries = []
+    def visit
+    visit = { File jar ->
+        def zip = new java.util.zip.ZipFile(jar)
+        try {
+            def metaEntry = zip.getEntry("fabric.mod.json")
+            if (metaEntry == null) {
+                libraries << jar
+                return
+            }
+            def meta = new groovy.json.JsonSlurper().parse(zip.getInputStream(metaEntry), "UTF-8")
+            String id = meta.id
+            String version = meta.version ?: "0"
+            if (!provided(id)) {
+                def current = chosen[id]
+                if (current == null || compareVersions(version, current.version) > 0) {
+                    chosen[id] = [version: version, file: jar]
+                }
+            }
+            (meta.jars ?: []).each { nested ->
+                def entry = zip.getEntry(nested.file)
+                if (entry == null) return
+                def target = new File(outDir, entry.name.tokenize("/").last())
+                if (!target.exists() || target.length() != entry.size) {
+                    target.withOutputStream { it << zip.getInputStream(entry) }
+                }
+                visit(target)
+            }
+        } finally {
+            zip.close()
+        }
+    }
+    testModUrls().each { visit(downloadCached(it, modsDir)) }
+    return chosen.values().collect { it.file } + libraries.unique()
 }
 
 // Podstawia wartości z gradle.properties do fabric.mod.json

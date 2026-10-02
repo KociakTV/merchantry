@@ -38,7 +38,7 @@ public final class ShopConfigCommand {
     private static final SuggestionProvider<CommandSourceStack> OFFER_IDS = (context, builder) ->
             SharedSuggestionProvider.suggest(ShopManager.offers().stream().map(o -> o.id), builder);
     private static final SuggestionProvider<CommandSourceStack> UNLOCK_IDS = (context, builder) ->
-            SharedSuggestionProvider.suggest(Arrays.stream(Unlock.values()).map(Unlock::id), builder);
+            SharedSuggestionProvider.suggest(Unlock.available().stream().map(Unlock::id), builder);
 
     private ShopConfigCommand() {
     }
@@ -239,7 +239,7 @@ public final class ShopConfigCommand {
         return add(context, OfferType.UNLOCK, o -> {
             o.unlock = unlock.id();
             o.name = "@default.unlock." + unlock.id();
-            o.description.add("@default.unlock.desc:" + unlock.id());
+            o.description.add(unlock.defaultDescription());
         });
     }
 

@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import pl.ktv.merchantry.Config;
+import pl.ktv.merchantry.Lang;
 import pl.ktv.merchantry.data.ModAttachments;
 import pl.ktv.merchantry.data.PlayerData;
 
@@ -63,5 +64,35 @@ public final class Economy {
         }
         long balance = getBalance(player);
         scoreboard.getOrCreatePlayerScore(player, objective).set((int) Math.min(balance, Integer.MAX_VALUE));
+    }
+
+    // Wypłaty za czas gry jako wyniki scoreboardu - dla modów tablic wyników (leaderboardów) i datapacków.
+    // Wywoływane co sekundę; wynik zapisywany tylko przy zmianie.
+    public static void syncPayoutScores(ServerPlayer player) {
+        if (!isEnabled()) {
+            return;
+        }
+        setScore(player, Config.PAYOUTS_LEFT_OBJECTIVE.get(), "scoreboard.payouts_left",
+                (int) Math.min(Earnings.remainingPayoutsToday(player), Integer.MAX_VALUE));
+        int next = Config.PLAYTIME_REWARD.get() <= 0 || Earnings.dailyLimitReached(player)
+                ? 0 : Earnings.secondsToNextPayout(player);
+        setScore(player, Config.NEXT_PAYOUT_OBJECTIVE.get(), "scoreboard.next_payout", next);
+    }
+
+    private static void setScore(ServerPlayer player, String name, String titleKey, int value) {
+        if (name.isBlank()) {
+            return;
+        }
+        ServerScoreboard scoreboard = player.server.getScoreboard();
+        Objective objective = scoreboard.getObjective(name);
+        if (objective == null) {
+            objective = scoreboard.addObjective(name, ObjectiveCriteria.DUMMY,
+                    Component.literal(Lang.strIn(Lang.defaultLanguage(), titleKey)), ObjectiveCriteria.RenderType.INTEGER,
+                    true, null);
+        }
+        var score = scoreboard.getOrCreatePlayerScore(player, objective);
+        if (score.get() != value) {
+            score.set(value);
+        }
     }
 }

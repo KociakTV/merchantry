@@ -22,10 +22,14 @@
     ],
     "jei_mod_plugin": [
       "pl.ktv.merchantry.client.jei.JeiCompat"
+    ],
+    "client": [
+      "pl.ktv.merchantry.client.MerchantryClient"
     ]
   },
   "mixins": [
-    "merchantry.mixins.json"
+    "merchantry.mixins.json",
+    "merchantry.client.mixins.json"
   ],
   "accessWidener": "merchantry.accesswidener",
   "depends": {
@@ -33,5 +37,14 @@
     "fabric-api": "*",
     "minecraft": "${minecraft_version}",
     "java": ">=21"
+  },
+  "suggests": {
+    "ftbultimine": "*",
+    "trinkets": "*",
+    "universal-graves": "*",
+    "yigd": "*",
+    "ftbchunks": "*",
+    "xaerominimap": "*",
+    "journeymap": "*"
   }
 }

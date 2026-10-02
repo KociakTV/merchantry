@@ -4,14 +4,21 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
-import pl.ktv.merchantry.Merchantry;
 import pl.ktv.merchantry.Lang;
+import pl.ktv.merchantry.Merchantry;
+import pl.ktv.merchantry.compat.Compat;
+import pl.ktv.merchantry.compat.trinkets.TrinketsCompat;
 import pl.ktv.merchantry.data.ModAttachments;
 import pl.ktv.merchantry.data.PlayerData;
+import pl.ktv.merchantry.network.DeathSavedPacket;
 
-// Jednorazowy keepInventory na ładunki. Przy śmierci ekwipunek i XP są zapamiętywane i czyszczone
-// (więc nic nie wypada), a po odrodzeniu oddawane graczowi. Reguła gry keepInventory nie jest zmieniana.
+import pl.ktv.merchantry.util.PlayerItems;
+
+// Jednorazowy keepInventory na ładunki. Przy śmierci ekwipunek, sloty Trinkets i XP są zapamiętywane
+// i czyszczone (więc nic nie wypada i mody grobów nie mają czego zabrać), a po odrodzeniu oddawane graczowi.
+// Reguła gry keepInventory nie jest zmieniana.
 public final class KeepInventory {
     private KeepInventory() {
     }
@@ -27,6 +34,9 @@ public final class KeepInventory {
 
         CompoundTag snapshot = new CompoundTag();
         snapshot.put("items", player.getInventory().save(new ListTag()));
+        if (Compat.TRINKETS.isLoaded()) {
+            snapshot.put("trinkets", TrinketsCompat.saveAndClear(player));
+        }
         snapshot.putInt("xp_level", player.experienceLevel);
         snapshot.putFloat("xp_progress", player.experienceProgress);
         snapshot.putInt("xp_total", player.totalExperience);
@@ -37,6 +47,9 @@ public final class KeepInventory {
         player.experienceLevel = 0;
         player.experienceProgress = 0;
         player.totalExperience = 0;
+
+        // Klient z Merchantry nie stworzy waypointu śmierci (Xaero's, JourneyMap) - nie ma po co wracać
+        DeathSavedPacket.send(player);
 
         player.sendSystemMessage(Lang.msg("keepinv.used", data.keepInventoryCharges));
         Merchantry.LOGGER.info("{} zużył ładunek keepInventory (zostało {})", player.getGameProfile().getName(),
@@ -50,9 +63,26 @@ public final class KeepInventory {
             return;
         }
         player.getInventory().load(snapshot.getList("items", Tag.TAG_COMPOUND));
+        if (snapshot.contains("trinkets")) {
+            if (Compat.TRINKETS.isLoaded()) {
+                TrinketsCompat.restore(player, snapshot.getList("trinkets", Tag.TAG_COMPOUND));
+            } else {
+                // Trinkets odinstalowany między śmiercią a odrodzeniem - przedmioty trafiają do ekwipunku
+                for (Tag entry : snapshot.getList("trinkets", Tag.TAG_COMPOUND)) {
+                    PlayerItems.give(player, ItemStack.parseOptional(player.registryAccess(),
+                            ((CompoundTag) entry).getCompound("item")));
+                }
+            }
+        }
         player.experienceLevel = snapshot.getInt("xp_level");
         player.experienceProgress = snapshot.getFloat("xp_progress");
         player.totalExperience = snapshot.getInt("xp_total");
         ModAttachments.get(player).pendingRestore = null;
+    }
+
+    // Czy ostatnią śmierć gracza uratował ładunek keepInventory (od śmierci do odrodzenia).
+    // Wtedy nie powstaje grób (Universal Graves, YIGD) ani waypoint śmierci (FTB Chunks).
+    public static boolean isDeathSaved(ServerPlayer player) {
+        return ModAttachments.get(player).pendingRestore != null;
     }
 }

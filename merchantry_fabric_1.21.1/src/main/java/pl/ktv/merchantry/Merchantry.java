@@ -3,7 +3,11 @@ package pl.ktv.merchantry;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
+import pl.ktv.merchantry.compat.Compat;
+import pl.ktv.merchantry.compat.graves.GravesCompat;
+import pl.ktv.merchantry.compat.ultimine.UltimineCompat;
 import pl.ktv.merchantry.data.ModAttachments;
+import pl.ktv.merchantry.network.DeathSavedPacket;
 import pl.ktv.merchantry.event.PlayerEvents;
 import pl.ktv.merchantry.event.ServerEvents;
 
@@ -15,8 +19,13 @@ public class Merchantry implements ModInitializer {
     @Override
     public void onInitialize() {
         Config.load();
+        DeathSavedPacket.register();
         ModAttachments.init();
         ServerEvents.register();
         PlayerEvents.register();
+        if (Compat.FTB_ULTIMINE.isLoaded()) {
+            UltimineCompat.register();
+        }
+        GravesCompat.register();
     }
 }
