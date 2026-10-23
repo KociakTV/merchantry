@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,34 +40,36 @@ public final class SellerEvents {
         BlockState placed = event.getPlacedBlock();
         SellerData data = SellerData.get(level.getServer());
 
-        // Skrzynki sprzedającej nie wolno łączyć w podwójną skrzynkę (ani żadnej skrzynki z nią).
-        // Rozmiar skrzynki jest stały, a dane zapisujemy dla jednego bloku.
+        if (crateItem) {
+            Lang.setContext(player);
+            if (!Config.ENABLE_SELLER.get()) {
+                event.setCanceled(true);
+                player.sendSystemMessage(Lang.msg("seller.disabled"));
+                return;
+            }
+            if (SellerService.countCrates(data, player.getUUID()) >= Config.SELLER_MAX_CRATES.get()) {
+                event.setCanceled(true);
+                player.sendSystemMessage(Lang.msg("seller.limit_crates", Config.SELLER_MAX_CRATES.get()));
+                return;
+            }
+        }
+
+        // Skrzynka sprzedająca zawsze jest pojedyncza: jeśli stawiana obok innej skrzynki zrobiłaby się podwójna,
+        // rozdzielamy je (jak przy stawianiu z Shiftem). Dotyczy też zwykłej skrzynki stawianej obok sprzedającej.
         if (placed.hasProperty(ChestBlock.TYPE) && placed.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
             BlockPos other = pos.relative(ChestBlock.getConnectedDirection(placed));
             if (crateItem || data.crates.containsKey(SellerService.key(level, other))) {
-                event.setCanceled(true);
-                if (player != null) {
-                    Lang.setContext(player);
-                    player.sendSystemMessage(Lang.msg("seller.no_double"));
+                level.setBlock(pos, placed.setValue(ChestBlock.TYPE, ChestType.SINGLE), Block.UPDATE_ALL);
+                BlockState otherState = level.getBlockState(other);
+                if (otherState.is(Blocks.CHEST) && otherState.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+                    level.setBlock(other, otherState.setValue(ChestBlock.TYPE, ChestType.SINGLE), Block.UPDATE_ALL);
                 }
-                return;
             }
         }
         if (!crateItem) {
             return;
         }
 
-        Lang.setContext(player);
-        if (!Config.ENABLE_SELLER.get()) {
-            event.setCanceled(true);
-            player.sendSystemMessage(Lang.msg("seller.disabled"));
-            return;
-        }
-        if (SellerService.countCrates(data, player.getUUID()) >= Config.SELLER_MAX_CRATES.get()) {
-            event.setCanceled(true);
-            player.sendSystemMessage(Lang.msg("seller.limit_crates", Config.SELLER_MAX_CRATES.get()));
-            return;
-        }
         SellerService.register(level, pos, player.getUUID());
         player.sendSystemMessage(Lang.msg("seller.placed"));
         Merchantry.LOGGER.info("{} postawił skrzynkę sprzedającą w {} {}", player.getGameProfile().getName(),

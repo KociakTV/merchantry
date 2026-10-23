@@ -38,10 +38,12 @@ public class SellerData extends SavedData {
 
     // Rozliczenie jednego gracza (wspólne dla wszystkich jego skrzynek)
     public static final class Ledger {
-        // Dzień (liczony od 1970, czas serwera), którego dotyczy licznik stacków
+        // Dzień (liczony od 1970, czas serwera), którego dotyczy licznik sprzedaży
         public long day;
-        // Ile stacków sprzedano w tym dniu (stack = ilość / maksymalny rozmiar stacka przedmiotu)
-        public double stacksToday;
+        // Ile sprzedaży (opróżnień skrzynki) wykonano w tym dniu
+        public int sellsToday;
+        // Dodatkowe dzienne sprzedaże dokupione w sklepie (na stałe, ponad limit z konfiguracji)
+        public int extraSells;
         // Zarobek według dnia sprzedaży: dzień -> kwota. Dojrzewa po kilku dniach (patrz SellerService.collect)
         public final TreeMap<Long, Long> earnings = new TreeMap<>();
     }
@@ -58,7 +60,7 @@ public class SellerData extends SavedData {
         Ledger ledger = ledgers.computeIfAbsent(owner, id -> new Ledger());
         if (ledger.day != today) {
             ledger.day = today;
-            ledger.stacksToday = 0;
+            ledger.sellsToday = 0;
         }
         return ledger;
     }
@@ -77,7 +79,8 @@ public class SellerData extends SavedData {
             CompoundTag saved = (CompoundTag) entry;
             Ledger ledger = new Ledger();
             ledger.day = saved.getLong("day");
-            ledger.stacksToday = saved.getDouble("stacks_today");
+            ledger.sellsToday = saved.getInt("sells_today");
+            ledger.extraSells = saved.getInt("extra_sells");
             for (Tag earning : saved.getList("earnings", Tag.TAG_COMPOUND)) {
                 CompoundTag line = (CompoundTag) earning;
                 ledger.earnings.put(line.getLong("day"), line.getLong("amount"));
@@ -107,7 +110,8 @@ public class SellerData extends SavedData {
             CompoundTag saved = new CompoundTag();
             saved.putUUID("owner", entry.getKey());
             saved.putLong("day", entry.getValue().day);
-            saved.putDouble("stacks_today", entry.getValue().stacksToday);
+            saved.putInt("sells_today", entry.getValue().sellsToday);
+            saved.putInt("extra_sells", entry.getValue().extraSells);
             ListTag earnings = new ListTag();
             for (Map.Entry<Long, Long> earning : entry.getValue().earnings.entrySet()) {
                 CompoundTag line = new CompoundTag();

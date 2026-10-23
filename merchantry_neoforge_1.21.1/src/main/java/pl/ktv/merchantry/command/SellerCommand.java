@@ -50,6 +50,16 @@ public final class SellerCommand {
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                         .executes(SellerCommand::adminRemove)))
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(context -> reset(context, true, true))
+                                        .then(Commands.literal("limit").executes(context -> reset(context, true, false)))
+                                        .then(Commands.literal("payout").executes(context -> reset(context, false, true)))
+                                        .then(Commands.literal("all").executes(context -> reset(context, true, true)))))
+                        .then(Commands.literal("extra")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1000))
+                                                .executes(SellerCommand::extra))))
                         .then(Commands.literal("energy")
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                         .then(Commands.argument("amount", IntegerArgumentType.integer(0))
@@ -69,6 +79,31 @@ public final class SellerCommand {
         }
         player.sendSystemMessage(Lang.msg("seller.collect.done", Economy.format(amount)));
         return 1;
+    }
+
+    // /seller admin reset <gracz> [limit|payout|all] - zeruje dzienny limit sprzedaży i/albo oczekiwanie na wypłatę
+    private static int reset(CommandContext<CommandSourceStack> context, boolean limit, boolean payout)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(context, "player");
+        if (limit) {
+            SellerService.resetDailyLimit(target.server, target.getUUID());
+        }
+        long matured = payout ? SellerService.resetPayoutCooldown(target.server, target.getUUID()) : 0;
+        String name = target.getGameProfile().getName();
+        context.getSource().sendSuccess(() -> Lang.msg("seller.admin.reset", name,
+                Lang.str(limit && payout ? "seller.admin.reset.all" : limit ? "seller.admin.reset.limit"
+                        : "seller.admin.reset.payout"), Economy.format(matured)), true);
+        return 1;
+    }
+
+    // /seller admin extra <gracz> <ilość> - dodatkowe dzienne sprzedaże (tego używa oferta w sklepie)
+    private static int extra(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(context, "player");
+        int total = SellerService.addExtraSells(target.server, target.getUUID(),
+                IntegerArgumentType.getInteger(context, "amount"));
+        target.sendSystemMessage(Lang.msgFor(target, "seller.extra.added", total));
+        context.getSource().sendSuccess(() -> Lang.msg("seller.admin.extra", target.getGameProfile().getName(), total), true);
+        return total;
     }
 
     private static int adminAdd(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

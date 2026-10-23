@@ -23,6 +23,7 @@ import pl.ktv.merchantry.economy.Economy;
 import pl.ktv.merchantry.shop.sell.SellManager;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,11 +52,12 @@ public final class SellerService {
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(root));
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         stack.set(DataComponents.CUSTOM_NAME, noItalic(Lang.msg("seller.item.name")));
+        int energy = Config.SELLER_ENERGY_PER_SELL.get();
         stack.set(DataComponents.LORE, new ItemLore(List.of(
                 noItalic(Lang.msg("seller.item.lore.1")),
                 noItalic(Lang.msg("seller.item.lore.2", Config.SELLER_TAX_PERCENT.get().intValue(),
-                        Config.SELLER_DAILY_STACKS.get())),
-                noItalic(Lang.msg("seller.item.lore.3", Config.SELLER_ENERGY_PER_STACK.get())),
+                        dailySellsConfigured())),
+                noItalic(energy > 0 ? Lang.msg("seller.item.lore.3", energy) : Lang.msg("seller.item.lore.3.free")),
                 noItalic(Lang.msg("seller.item.lore.4"))
         )));
         return stack;
@@ -64,6 +66,17 @@ public final class SellerService {
     public static boolean isCrateItem(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         return stack.is(Items.CHEST) && data != null && data.copyTag().contains(TAG);
+    }
+
+    // Limit z konfiguracji: 0 oznacza "tyle, co maksymalna liczba skrzynek" (podąża za nią automatycznie)
+    public static int dailySellsConfigured() {
+        int configured = Config.SELLER_DAILY_SELLS.get();
+        return configured > 0 ? configured : Config.SELLER_MAX_CRATES.get();
+    }
+
+    // Ile sprzedaży dziennie ma ten gracz: limit z konfiguracji + dokupione w sklepie
+    public static int dailySellLimit(SellerData.Ledger ledger) {
+        return dailySellsConfigured() + ledger.extraSells;
     }
 
     private static Component noItalic(Component component) {
@@ -133,48 +146,82 @@ public final class SellerService {
         }
     }
 
-    // Jeden cykl sprzedaży jednej skrzynki
+    // Jedno sprawdzenie skrzynki: jeśli może, sprzedaje CAŁĄ zawartość naraz (to jedna "sprzedaż")
     private static void sell(SellerData data, SellerData.Crate crate, ChestBlockEntity chest, long today) {
         SellerData.Ledger ledger = data.ledger(crate.owner, today);
-
-        // Ile stacków wolno jeszcze sprzedać w tym cyklu: limit cyklu, limit dzienny i energia
-        double allowance = Math.min(Config.SELLER_STACKS_PER_CYCLE.get(),
-                Config.SELLER_DAILY_STACKS.get() - ledger.stacksToday);
-        int energyPerStack = Config.SELLER_ENERGY_PER_STACK.get();
-        if (energyPerStack > 0) {
-            allowance = Math.min(allowance, crate.energy / (double) energyPerStack);
-        }
-        if (allowance < 0.001) {
+        if (ledger.sellsToday >= dailySellLimit(ledger)) {
             return;
         }
+        int energyPerSell = Config.SELLER_ENERGY_PER_SELL.get();
+        if (energyPerSell > 0 && crate.energy < energyPerSell) {
+            return;
+        }
+        // Domyślnie czekamy, aż skrzynka się zapełni, żeby nie marnować dziennych sprzedaży na drobne partie
+        if (Config.SELLER_ONLY_WHEN_FULL.get()) {
+            for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+                if (chest.getItem(slot).isEmpty()) {
+                    return;
+                }
+            }
+        }
 
+        // Najpierw liczymy, ile dostaniemy, i zapamiętujemy sloty do opróżnienia
         double keep = 1.0 - Config.SELLER_TAX_PERCENT.get() / 100.0;
-        double soldStacks = 0;
         long earned = 0;
-        for (int slot = 0; slot < chest.getContainerSize() && allowance - soldStacks > 0.001; slot++) {
+        List<Integer> slots = new ArrayList<>();
+        for (int slot = 0; slot < chest.getContainerSize(); slot++) {
             ItemStack stack = chest.getItem(slot);
             long price = SellManager.priceOf(stack);
-            if (price <= 0) {
-                continue;
+            if (price > 0) {
+                earned += (long) Math.floor(stack.getCount() * price * keep);
+                slots.add(slot);
             }
-            int maxStack = stack.getMaxStackSize();
-            // Tyle sztuk mieści się jeszcze w limicie (z drobną tolerancją na błędy zaokrągleń)
-            int amount = (int) Math.min(stack.getCount(), Math.floor((allowance - soldStacks) * maxStack + 1e-6));
-            if (amount <= 0) {
-                continue;
-            }
-            chest.removeItem(slot, amount);
-            earned += (long) Math.floor(amount * price * keep);
-            soldStacks += amount / (double) maxStack;
         }
-        if (soldStacks <= 0) {
+        // Nic do sprzedania (albo zarobek zaokrągla się do zera) - nie zużywamy sprzedaży ani prądu
+        if (slots.isEmpty() || earned <= 0) {
             return;
         }
 
-        ledger.stacksToday += soldStacks;
+        for (int slot : slots) {
+            chest.setItem(slot, ItemStack.EMPTY);
+        }
+        chest.setChanged();
+        ledger.sellsToday++;
         ledger.earnings.merge(today, earned, Long::sum);
-        crate.energy = Math.max(0, crate.energy - (long) Math.ceil(soldStacks * energyPerStack));
+        crate.energy = Math.max(0, crate.energy - energyPerSell);
         data.setDirty();
+    }
+
+    // ---------------------------------------------------------------- administracja
+
+    // Zeruje dzienny licznik sprzedaży gracza (dokupione sprzedaże zostają)
+    public static void resetDailyLimit(MinecraftServer server, UUID owner) {
+        SellerData data = SellerData.get(server);
+        data.ledger(owner, LocalDate.now().toEpochDay()).sellsToday = 0;
+        data.setDirty();
+    }
+
+    // Skraca oczekiwanie na wypłatę: cały czekający zarobek staje się od razu gotowy do odbioru
+    public static long resetPayoutCooldown(MinecraftServer server, UUID owner) {
+        SellerData data = SellerData.get(server);
+        SellerData.Ledger ledger = data.ledgers.get(owner);
+        if (ledger == null || ledger.earnings.isEmpty()) {
+            return 0;
+        }
+        long sum = ledger.earnings.values().stream().mapToLong(Long::longValue).sum();
+        ledger.earnings.clear();
+        ledger.earnings.put(LocalDate.now().toEpochDay() - Config.SELLER_PAYOUT_DELAY_DAYS.get(), sum);
+        data.setDirty();
+        return sum;
+    }
+
+    // Dodaje graczowi dodatkowe dzienne sprzedaże (na stałe); zwraca nowy łączny limit dzienny
+    public static int addExtraSells(MinecraftServer server, UUID owner, int amount) {
+        SellerData data = SellerData.get(server);
+        SellerData.Ledger ledger = data.ledger(owner, LocalDate.now().toEpochDay());
+        ledger.extraSells += amount;
+        data.setDirty();
+        return dailySellLimit(ledger);
     }
 
     // ---------------------------------------------------------------- zarobek
@@ -244,8 +291,10 @@ public final class SellerService {
         }
         player.sendSystemMessage(Lang.msg("seller.status.crates", crates, Config.SELLER_MAX_CRATES.get(),
                 String.format(java.util.Locale.ROOT, "%,d", energy).replace(',', ' ')));
-        player.sendSystemMessage(Lang.msg("seller.status.limit",
-                String.format(java.util.Locale.ROOT, "%.1f", ledger.stacksToday), Config.SELLER_DAILY_STACKS.get()));
+        player.sendSystemMessage(Lang.msg("seller.status.limit", ledger.sellsToday, dailySellLimit(ledger)));
+        if (ledger.extraSells > 0) {
+            player.sendSystemMessage(Lang.msg("seller.status.extra", ledger.extraSells));
+        }
         player.sendSystemMessage(Lang.msg("seller.status.ready", Economy.format(ready)));
         if (pending > 0) {
             player.sendSystemMessage(Lang.msg("seller.status.pending", Economy.format(pending), soonest));

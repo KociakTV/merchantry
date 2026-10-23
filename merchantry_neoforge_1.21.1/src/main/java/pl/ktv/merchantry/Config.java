@@ -46,10 +46,10 @@ public final class Config {
 
     public static final ModConfigSpec.BooleanValue ENABLE_SELLER;
     public static final ModConfigSpec.DoubleValue SELLER_TAX_PERCENT;
-    public static final ModConfigSpec.IntValue SELLER_DAILY_STACKS;
-    public static final ModConfigSpec.IntValue SELLER_STACKS_PER_CYCLE;
+    public static final ModConfigSpec.IntValue SELLER_DAILY_SELLS;
+    public static final ModConfigSpec.BooleanValue SELLER_ONLY_WHEN_FULL;
     public static final ModConfigSpec.IntValue SELLER_INTERVAL_SECONDS;
-    public static final ModConfigSpec.IntValue SELLER_ENERGY_PER_STACK;
+    public static final ModConfigSpec.IntValue SELLER_ENERGY_PER_SELL;
     public static final ModConfigSpec.IntValue SELLER_ENERGY_CAPACITY;
     public static final ModConfigSpec.IntValue SELLER_MAX_RECEIVE;
     public static final ModConfigSpec.IntValue SELLER_PAYOUT_DELAY_DAYS;
@@ -179,41 +179,47 @@ public final class Config {
 
         BUILDER.push("seller");
         ENABLE_SELLER = BUILDER
-                .comment("Selling chests: a normal chest with custom data that automatically sells its contents at the server's",
-                        "buy-back prices (config/merchantry_sell.json). Works only when currency is enabled.")
-                .define("enableSeller", true);
+                .comment("Selling chests: a normal chest with custom data that sells its whole contents at once at the server's",
+                        "buy-back prices (config/merchantry_sell.json). Disabled by default. Works only when currency is enabled.",
+                        "The shop offers for the chest are added the first time the server starts with this enabled.",
+                        "IMPORTANT: a selling chest works only when it receives energy, so the modpack needs a mod that produces FE",
+                        "(Create Crafts & Additions, Create: New Age, Mekanism, Thermal...) - unless sellerEnergyPerSell = 0.")
+                .define("enableSeller", false);
         SELLER_TAX_PERCENT = BUILDER
                 .comment("Tax in percent taken from every sale of a selling chest (0 = no tax).",
                         "Keep it high - the farm behind the chest produces items for free.")
                 .defineInRange("sellerTaxPercent", 40.0, 0.0, 100.0);
-        SELLER_DAILY_STACKS = BUILDER
-                .comment("Daily limit per player (all their chests together), in stacks. One stack = item count / max stack size,",
-                        "so 64 wheat and 16 ender pearls both count as 1. The counter resets at midnight (server time).",
-                        "A single chest holds 27 stacks.")
-                .defineInRange("sellerDailyStacks", 16, 1, 1_000_000);
-        SELLER_STACKS_PER_CYCLE = BUILDER
-                .comment("Maximum stacks one chest sells per cycle")
-                .defineInRange("sellerStacksPerCycle", 4, 1, 1000);
+        SELLER_MAX_CRATES = BUILDER
+                .comment("Maximum number of selling chests per player")
+                .defineInRange("sellerMaxCratesPerPlayer", 4, 1, 1000);
+        SELLER_DAILY_SELLS = BUILDER
+                .comment("Daily limit of sells per player (all their chests together). One sell = one chest sold whole.",
+                        "0 = the same as sellerMaxCratesPerPlayer (the limit then follows that value automatically).",
+                        "If you set it yourself, keep it equal to or greater than sellerMaxCratesPerPlayer,",
+                        "otherwise some chests will stand idle for part of the day.",
+                        "Players can buy extra daily sells in the shop (offer seller_extra_sell). The counter resets at midnight (server time).")
+                .defineInRange("sellerDailySells", 0, 0, 1_000_000);
+        SELLER_ONLY_WHEN_FULL = BUILDER
+                .comment("true = a chest sells only when it is full (no free slot), so a sell is always a whole chest.",
+                        "false = it sells whenever it holds anything the server buys, which wastes daily sells on tiny batches.")
+                .define("sellerOnlyWhenFull", true);
         SELLER_INTERVAL_SECONDS = BUILDER
-                .comment("Length of one selling cycle in seconds")
-                .defineInRange("sellerIntervalSeconds", 10, 1, 3600);
-        SELLER_ENERGY_PER_STACK = BUILDER
-                .comment("Energy (FE) one stack costs to sell. The chest takes FE from any mod's cables or generators",
-                        "(Create Crafts & Additions, Create: New Age, Mekanism...). 0 = no power needed.")
-                .defineInRange("sellerEnergyPerStack", 10_000, 0, 100_000_000);
+                .comment("How often (in seconds) every selling chest checks whether it can sell")
+                .defineInRange("sellerIntervalSeconds", 60, 1, 3600);
+        SELLER_ENERGY_PER_SELL = BUILDER
+                .comment("Energy (FE) one sell costs. The chest takes FE from any mod's cables or generators.",
+                        "0 = no power needed (then no energy mod is required).")
+                .defineInRange("sellerEnergyPerSell", 100_000, 0, 1_000_000_000);
         SELLER_ENERGY_CAPACITY = BUILDER
                 .comment("How much energy (FE) a selling chest can store")
-                .defineInRange("sellerEnergyCapacity", 400_000, 1, 1_000_000_000);
+                .defineInRange("sellerEnergyCapacity", 2_000_000, 1, 1_000_000_000);
         SELLER_MAX_RECEIVE = BUILDER
                 .comment("Maximum energy (FE) a selling chest accepts in one transfer (limits how fast it charges)")
                 .defineInRange("sellerMaxReceive", 10_000, 1, 1_000_000_000);
         SELLER_PAYOUT_DELAY_DAYS = BUILDER
                 .comment("Earnings from a given day can be collected as a cheque only after this many days",
                         "(real days, server time). Prevents quick money loops. 0 = collect immediately.")
-                .defineInRange("sellerPayoutDelayDays", 2, 0, 30);
-        SELLER_MAX_CRATES = BUILDER
-                .comment("Maximum number of selling chests per player")
-                .defineInRange("sellerMaxCratesPerPlayer", 4, 1, 1000);
+                .defineInRange("sellerPayoutDelayDays", 1, 0, 30);
         BUILDER.pop();
 
         BUILDER.push("exchange");
