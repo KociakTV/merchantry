@@ -2,6 +2,7 @@ package pl.ktv.merchantry.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -32,7 +33,10 @@ public final class SellerCommand {
                     SellerService.sendStatus(context.getSource().getPlayerOrException());
                     return 1;
                 })
-                .then(Commands.literal("collect").executes(SellerCommand::collect))
+                .then(Commands.literal("collect")
+                        .executes(context -> collect(context, 0))
+                        .then(Commands.argument("amount", LongArgumentType.longArg(1))
+                                .executes(context -> collect(context, LongArgumentType.getLong(context, "amount")))))
                 .then(Commands.literal("give").requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player()).executes(context -> {
                             ServerPlayer target = EntityArgument.getPlayer(context, "player");
@@ -66,18 +70,28 @@ public final class SellerCommand {
                                                 .executes(SellerCommand::adminEnergy))))));
     }
 
-    private static int collect(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    // /seller collect [kwota] - czek na całość albo na podaną kwotę; reszta zostaje w rozliczeniu
+    private static int collect(CommandContext<CommandSourceStack> context, long requested) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         if (!Economy.isEnabled()) {
             player.sendSystemMessage(Lang.msg("currency.disabled"));
             return 0;
         }
-        long amount = SellerService.collect(player);
+        long ready = SellerService.readyAmount(player);
+        if (requested > ready && ready > 0) {
+            player.sendSystemMessage(Lang.msg("seller.collect.too_much", Economy.format(ready)));
+            return 0;
+        }
+        long amount = SellerService.collect(player, requested);
         if (amount <= 0) {
             player.sendSystemMessage(Lang.msg("seller.collect.none"));
             return 0;
         }
         player.sendSystemMessage(Lang.msg("seller.collect.done", Economy.format(amount)));
+        long left = ready - amount;
+        if (left > 0) {
+            player.sendSystemMessage(Lang.msg("seller.collect.left", Economy.format(left)));
+        }
         return 1;
     }
 
@@ -114,7 +128,7 @@ public final class SellerCommand {
             return 0;
         }
         ServerPlayer owner = EntityArgument.getPlayer(context, "owner");
-        SellerService.register(level, pos, owner.getUUID());
+        SellerService.register(level, pos, owner.getUUID(), owner.getGameProfile().getName());
         context.getSource().sendSuccess(() -> Lang.msg("seller.admin.added", pos.toShortString(),
                 owner.getGameProfile().getName()), true);
         return 1;

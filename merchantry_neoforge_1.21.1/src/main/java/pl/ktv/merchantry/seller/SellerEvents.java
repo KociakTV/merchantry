@@ -15,6 +15,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import pl.ktv.merchantry.Config;
 import pl.ktv.merchantry.Lang;
@@ -70,7 +71,7 @@ public final class SellerEvents {
             return;
         }
 
-        SellerService.register(level, pos, player.getUUID());
+        SellerService.register(level, pos, player.getUUID(), player.getGameProfile().getName());
         player.sendSystemMessage(Lang.msg("seller.placed"));
         Merchantry.LOGGER.info("{} postawił skrzynkę sprzedającą w {} {}", player.getGameProfile().getName(),
                 level.dimension().location(), pos.toShortString());
@@ -96,6 +97,12 @@ public final class SellerEvents {
                 break;
             }
         }
+    }
+
+    // Po starcie serwera odświeża wyniki zarobku w scoreboardzie
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        SellerService.syncAllEarnedScores(event.getServer());
     }
 
     // Co kilka sekund sprzedaje zawartość wszystkich skrzynek

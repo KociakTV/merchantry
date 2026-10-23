@@ -44,6 +44,10 @@ public class SellerData extends SavedData {
         public int sellsToday;
         // Dodatkowe dzienne sprzedaże dokupione w sklepie (na stałe, ponad limit z konfiguracji)
         public int extraSells;
+        // Łączny zarobek ze wszystkich sprzedaży (po podatku), do statystyk i tablic wyników
+        public long totalEarned;
+        // Nick właściciela - potrzebny do zapisania wyniku w scoreboardzie, gdy właściciel jest offline
+        public String name = "";
         // Zarobek według dnia sprzedaży: dzień -> kwota. Dojrzewa po kilku dniach (patrz SellerService.collect)
         public final TreeMap<Long, Long> earnings = new TreeMap<>();
     }
@@ -81,6 +85,8 @@ public class SellerData extends SavedData {
             ledger.day = saved.getLong("day");
             ledger.sellsToday = saved.getInt("sells_today");
             ledger.extraSells = saved.getInt("extra_sells");
+            ledger.totalEarned = saved.getLong("total_earned");
+            ledger.name = saved.getString("name");
             for (Tag earning : saved.getList("earnings", Tag.TAG_COMPOUND)) {
                 CompoundTag line = (CompoundTag) earning;
                 ledger.earnings.put(line.getLong("day"), line.getLong("amount"));
@@ -112,6 +118,8 @@ public class SellerData extends SavedData {
             saved.putLong("day", entry.getValue().day);
             saved.putInt("sells_today", entry.getValue().sellsToday);
             saved.putInt("extra_sells", entry.getValue().extraSells);
+            saved.putLong("total_earned", entry.getValue().totalEarned);
+            saved.putString("name", entry.getValue().name);
             ListTag earnings = new ListTag();
             for (Map.Entry<Long, Long> earning : entry.getValue().earnings.entrySet()) {
                 CompoundTag line = new CompoundTag();

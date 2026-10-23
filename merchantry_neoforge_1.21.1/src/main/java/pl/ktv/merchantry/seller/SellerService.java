@@ -6,9 +6,13 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerScoreboard;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ScoreHolder;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
@@ -94,8 +98,9 @@ public final class SellerService {
     }
 
     // Zapisuje postawioną skrzynkę jako sprzedającą
-    public static void register(ServerLevel level, BlockPos pos, UUID owner) {
+    public static void register(ServerLevel level, BlockPos pos, UUID owner, String ownerName) {
         SellerData data = SellerData.get(level.getServer());
+        data.ledger(owner, LocalDate.now().toEpochDay()).name = ownerName;
         data.crates.put(key(level, pos), new SellerData.Crate(owner, 0));
         data.setDirty();
         // Kable innych modów mogły zapamiętać "brak zasilania" - odświeżamy ich pamięć podręczną
@@ -141,13 +146,14 @@ public final class SellerService {
                 continue;
             }
             if (level.getBlockEntity(pos) instanceof ChestBlockEntity chest) {
-                sell(data, entry.getValue(), chest, today);
+                sell(server, data, entry.getValue(), chest, today);
             }
         }
     }
 
     // Jedno sprawdzenie skrzynki: jeśli może, sprzedaje CAŁĄ zawartość naraz (to jedna "sprzedaż")
-    private static void sell(SellerData data, SellerData.Crate crate, ChestBlockEntity chest, long today) {
+    private static void sell(MinecraftServer server, SellerData data, SellerData.Crate crate,
+                             ChestBlockEntity chest, long today) {
         SellerData.Ledger ledger = data.ledger(crate.owner, today);
         if (ledger.sellsToday >= dailySellLimit(ledger)) {
             return;
@@ -188,8 +194,36 @@ public final class SellerService {
         chest.setChanged();
         ledger.sellsToday++;
         ledger.earnings.merge(today, earned, Long::sum);
+        ledger.totalEarned += earned;
         crate.energy = Math.max(0, crate.energy - energyPerSell);
         data.setDirty();
+        syncEarnedScore(server, ledger);
+    }
+
+    // Łączny zarobek gracza jako wynik w scoreboardzie (dla modów z tablicami wyników).
+    // Wpisujemy po nicku, więc działa też, gdy właściciel jest offline.
+    public static void syncEarnedScore(MinecraftServer server, SellerData.Ledger ledger) {
+        String name = Config.SELLER_EARNED_OBJECTIVE.get();
+        if (name.isBlank() || ledger.name.isBlank()) {
+            return;
+        }
+        ServerScoreboard scoreboard = server.getScoreboard();
+        Objective objective = scoreboard.getObjective(name);
+        if (objective == null) {
+            objective = scoreboard.addObjective(name, ObjectiveCriteria.DUMMY,
+                    Component.literal(Lang.strIn(Lang.defaultLanguage(), "scoreboard.seller_earned")),
+                    ObjectiveCriteria.RenderType.INTEGER, true, null);
+        }
+        scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(ledger.name), objective)
+                .set((int) Math.min(ledger.totalEarned, Integer.MAX_VALUE));
+    }
+
+    // Po starcie serwera odświeża wyniki wszystkich graczy (np. gdy cel scoreboardu dopiero włączono)
+    public static void syncAllEarnedScores(MinecraftServer server) {
+        SellerData data = SellerData.get(server);
+        for (SellerData.Ledger ledger : data.ledgers.values()) {
+            syncEarnedScore(server, ledger);
+        }
     }
 
     // ---------------------------------------------------------------- administracja
@@ -243,18 +277,46 @@ public final class SellerService {
         return sum;
     }
 
-    // Wystawia czek na wszystko, co dojrzało. Zwraca kwotę (0 = nic do odebrania).
-    public static long collect(ServerPlayer player) {
+    // Ile zarobku jest teraz gotowe do odbioru
+    public static long readyAmount(ServerPlayer player) {
+        SellerData.Ledger ledger = SellerData.get(player.server).ledgers.get(player.getUUID());
+        return ledger == null ? 0 : matured(ledger, LocalDate.now().toEpochDay(), false);
+    }
+
+    // Wystawia czek na podaną kwotę (requested <= 0 = wszystko, co dojrzało). Reszta zostaje w rozliczeniu.
+    // Zwraca wypłaconą kwotę albo 0, gdy nie ma czego wypłacić albo prosimy o więcej, niż jest gotowe.
+    public static long collect(ServerPlayer player, long requested) {
         SellerData data = SellerData.get(player.server);
         SellerData.Ledger ledger = data.ledgers.get(player.getUUID());
         if (ledger == null) {
             return 0;
         }
-        long amount = matured(ledger, LocalDate.now().toEpochDay(), true);
-        if (amount <= 0) {
+        long today = LocalDate.now().toEpochDay();
+        long ready = matured(ledger, today, false);
+        long amount = requested > 0 ? requested : ready;
+        if (amount <= 0 || amount > ready) {
             return 0;
         }
+
+        // Pobieramy od najstarszych dni; ostatni dzień może zostać rozliczony tylko częściowo
+        long delay = Config.SELLER_PAYOUT_DELAY_DAYS.get();
+        long left = amount;
+        Iterator<Map.Entry<Long, Long>> iterator = ledger.earnings.entrySet().iterator();
+        while (iterator.hasNext() && left > 0) {
+            Map.Entry<Long, Long> earning = iterator.next();
+            if (earning.getKey() + delay > today) {
+                continue;
+            }
+            long take = Math.min(left, earning.getValue());
+            left -= take;
+            if (take == earning.getValue()) {
+                iterator.remove();
+            } else {
+                earning.setValue(earning.getValue() - take);
+            }
+        }
         data.setDirty();
+        ledger.name = player.getGameProfile().getName();
         ItemHandlerHelper.giveItemToPlayer(player, Cheque.create(player, amount));
         Merchantry.LOGGER.info("{} odebrał czek ze skrzynek sprzedających na {}", player.getGameProfile().getName(), amount);
         return amount;
@@ -265,6 +327,7 @@ public final class SellerService {
         SellerData data = SellerData.get(player.server);
         long today = LocalDate.now().toEpochDay();
         SellerData.Ledger ledger = data.ledger(player.getUUID(), today);
+        ledger.name = player.getGameProfile().getName();
 
         long crates = 0;
         long energy = 0;
@@ -274,14 +337,12 @@ public final class SellerService {
                 energy += crate.energy;
             }
         }
+        long delay = Config.SELLER_PAYOUT_DELAY_DAYS.get();
         long ready = matured(ledger, today, false);
         long pending = 0;
-        long soonest = Long.MAX_VALUE;
-        long delay = Config.SELLER_PAYOUT_DELAY_DAYS.get();
         for (Map.Entry<Long, Long> earning : ledger.earnings.entrySet()) {
             if (earning.getKey() + delay > today) {
                 pending += earning.getValue();
-                soonest = Math.min(soonest, earning.getKey() + delay - today);
             }
         }
 
@@ -295,9 +356,18 @@ public final class SellerService {
         if (ledger.extraSells > 0) {
             player.sendSystemMessage(Lang.msg("seller.status.extra", ledger.extraSells));
         }
+        // Gotowe do odbioru teraz, a potem to, co dojrzewa (z podziałem na dni, w których będzie gotowe)
         player.sendSystemMessage(Lang.msg("seller.status.ready", Economy.format(ready)));
         if (pending > 0) {
-            player.sendSystemMessage(Lang.msg("seller.status.pending", Economy.format(pending), soonest));
+            player.sendSystemMessage(Lang.msg("seller.status.pending", Economy.format(pending), delay));
+            for (Map.Entry<Long, Long> earning : ledger.earnings.entrySet()) {
+                long daysLeft = earning.getKey() + delay - today;
+                if (daysLeft > 0) {
+                    player.sendSystemMessage(Lang.msg("seller.status.pending.line", daysLeft,
+                            Economy.format(earning.getValue())));
+                }
+            }
         }
+        player.sendSystemMessage(Lang.msg("seller.status.total", Economy.format(ledger.totalEarned)));
     }
 }

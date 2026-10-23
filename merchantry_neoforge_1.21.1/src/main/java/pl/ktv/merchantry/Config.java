@@ -54,6 +54,7 @@ public final class Config {
     public static final ModConfigSpec.IntValue SELLER_MAX_RECEIVE;
     public static final ModConfigSpec.IntValue SELLER_PAYOUT_DELAY_DAYS;
     public static final ModConfigSpec.IntValue SELLER_MAX_CRATES;
+    public static final ModConfigSpec.ConfigValue<String> SELLER_EARNED_OBJECTIVE;
 
     public static final ModConfigSpec.BooleanValue ENABLE_EXCHANGE;
     public static final ModConfigSpec.DoubleValue DOLLARS_PER_SPUR;
@@ -220,6 +221,10 @@ public final class Config {
                 .comment("Earnings from a given day can be collected as a cheque only after this many days",
                         "(real days, server time). Prevents quick money loops. 0 = collect immediately.")
                 .defineInRange("sellerPayoutDelayDays", 1, 0, 30);
+        SELLER_EARNED_OBJECTIVE = BUILDER
+                .comment("Scoreboard objective with the total money each player earned from selling chests (after tax),",
+                        "for leaderboard mods and datapacks (empty = disabled)")
+                .define("sellerEarnedObjective", "merchantry_seller_earned");
         BUILDER.pop();
 
         BUILDER.push("exchange");
