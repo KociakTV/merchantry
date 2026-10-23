@@ -31,6 +31,7 @@ public final class ServerEvents {
             RepairCommands.register(dispatcher);
             KeepInventoryCommand.register(dispatcher);
             MarketCommand.register(dispatcher);
+            pl.ktv.merchantry.command.SellerCommand.register(dispatcher);
         });
 
         // Konfiguracja czytana przy każdym starcie świata (zmiany w pliku bez restartu gry)

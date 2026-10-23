@@ -45,6 +45,7 @@
     "yigd": "*",
     "ftbchunks": "*",
     "xaerominimap": "*",
-    "journeymap": "*"
+    "journeymap": "*",
+    "team_reborn_energy": "*"
   }
 }

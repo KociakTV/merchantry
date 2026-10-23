@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0 (NeoForge 1.21.1, Fabric 1.21.1, Fabric 1.20.1) — selling chest
+A server-side **selling chest**: an ordinary vanilla chest that automatically sells its contents to the server for $ — ideal for farms. No custom block, so players still join with a plain client. **Disabled by default** (`enableSeller = false`).
+
+- Bought in the shop (default: 100 000 $ or 256 diamonds; offers are added the first time the server starts with the chest enabled). The item is a normal chest with hidden data; it is always placed as a single chest and never merges into a double one
+- Every `sellerIntervalSeconds` (60 by default) a chest that is **full** sells **everything at once** at the `/sell` prices, minus `sellerTaxPercent`. Items the server does not buy stay in the chest and block it from being "full" (`sellerOnlyWhenFull`)
+- Each sale uses energy (`sellerEnergyPerSell`, 100 000 by default) — feed the chest with any mod that produces power: **Forge Energy** on NeoForge, **Team Reborn Energy** on Fabric (Create Crafts & Additions, Tech Reborn...). Set `sellerEnergyPerSell = 0` to run without power
+- Daily limit counted in sales (`sellerDailySells`, 0 = the same as `sellerMaxCratesPerPlayer`, 4 by default); extra daily sells can be bought in the shop, but only after the player has placed all of their chests (until then the offer is hidden)
+- Earnings are paid as a cheque collected after `sellerPayoutDelayDays` (1 day by default): `/seller` shows what is ready now, what matures on which day and the total; `/seller collect [amount]` pays out any amount
+- Total earned from the chests is a scoreboard objective (`merchantry_seller_earned`) for leaderboard mods
+- Admin: `/seller give`, `/seller admin list|add|remove|energy|extra|reset <player> [limit|payout|all]`
+- Fabric: the chest data lives in a block-entity attachment, so it survives restarts and drops correctly when broken by a player, explosion or command
+
 ## 1.1.0 (NeoForge 1.21.1, Fabric 1.21.1) — mod compatibility
 Brings the compatibility from the Fabric 1.20.1 release to Minecraft 1.21.1.
 

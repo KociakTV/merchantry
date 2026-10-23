@@ -1,5 +1,6 @@
 package pl.ktv.merchantry.data;
 
+import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +15,11 @@ public final class ModAttachments {
             .persistent(PlayerData.CODEC)
             .copyOnDeath()
             .buildAndRegister(new ResourceLocation(Merchantry.MOD_ID, "player_data"));
+
+    // Oznaczenie zwykłej skrzynki jako skrzynki sprzedającej (zapisywane razem z blokiem skrzynki)
+    public static final AttachmentType<Boolean> SELLER_CRATE = AttachmentRegistry.<Boolean>builder()
+            .persistent(Codec.BOOL)
+            .buildAndRegister(new ResourceLocation(Merchantry.MOD_ID, "seller_crate"));
 
     private ModAttachments() {
     }

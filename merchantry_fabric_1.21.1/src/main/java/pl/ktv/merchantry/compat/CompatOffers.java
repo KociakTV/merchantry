@@ -12,6 +12,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import pl.ktv.merchantry.Config;
+import pl.ktv.merchantry.Lang;
+import pl.ktv.merchantry.seller.SellerService;
 import pl.ktv.merchantry.Merchantry;
 import pl.ktv.merchantry.shop.ItemPrice;
 import pl.ktv.merchantry.shop.OfferType;
@@ -32,6 +35,8 @@ import java.util.Set;
 // zapisane w config/merchantry_compat_offers.json, więc oferty usunięte przez admina nie wracają.
 public final class CompatOffers {
     private static final String FILE_NAME = Merchantry.MOD_ID + "_compat_offers.json";
+    // Identyfikator w pliku "już dodane" dla skrzynki sprzedającej
+    private static final String SELLER_PACK_ID = "seller_crate";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Kupno: ilość w ofercie, cena w $ i cena w przedmiotach (gdy waluta wyłączona)
@@ -123,6 +128,13 @@ public final class CompatOffers {
             stateChanged = true;
             Merchantry.LOGGER.info("Dodano domyślne oferty dla {}", pack.mod().modId());
         }
+        // Skrzynka sprzedająca (własna funkcja moda, więc bez sprawdzania obecności innego moda) - raz,
+        // dopiero gdy admin ją włączy (domyślnie jest wyłączona, więc wyłączona skrzynka nie wisi w sklepie)
+        if (Config.ENABLE_SELLER.get() && !applied.contains(SELLER_PACK_ID)) {
+            shopChanged |= addSellerOffers();
+            applied.add(SELLER_PACK_ID);
+            stateChanged = true;
+        }
         if (shopChanged) {
             ShopManager.save();
         }
@@ -132,6 +144,36 @@ public final class CompatOffers {
         if (stateChanged) {
             saveApplied(applied);
         }
+    }
+
+    // Domyślne oferty skrzynki sprzedającej: droga skrzynka i dokupowane dzienne sprzedaże
+    // (admin może zmienić ceny albo usunąć oferty w /shopconfig)
+    private static boolean addSellerOffers() {
+        boolean added = false;
+        if (ShopManager.find("seller_crate") == null) {
+            ShopOffer crate = new ShopOffer("seller_crate", OfferType.ITEM);
+            // Przedmiot w języku domyślnym; kupującemu sklep da wersję w jego języku (patrz ShopService.deliver)
+            crate.item = Lang.with(null, SellerService::createItem);
+            crate.name = "@default.seller_crate";
+            crate.description.add("@default.seller_crate.desc");
+            crate.moneyPrice = 100_000L;
+            crate.itemPrice = new ItemPrice(Items.DIAMOND, 256);
+            ShopManager.offers().add(crate);
+            added = true;
+        }
+        if (ShopManager.find("seller_extra_sell") == null) {
+            // Oferta typu "komenda": po zakupie serwer dodaje graczowi jedną dzienną sprzedaż
+            ShopOffer extra = new ShopOffer("seller_extra_sell", OfferType.COMMAND);
+            extra.command = "seller admin extra %player% 1";
+            extra.icon = new ItemStack(Items.CHEST);
+            extra.name = "@default.seller_extra";
+            extra.description.add("@default.seller_extra.desc");
+            extra.moneyPrice = 50_000L;
+            extra.itemPrice = new ItemPrice(Items.DIAMOND, 128);
+            ShopManager.offers().add(extra);
+            added = true;
+        }
+        return added;
     }
 
     private static boolean addBuy(Pack pack, Buy buy) {

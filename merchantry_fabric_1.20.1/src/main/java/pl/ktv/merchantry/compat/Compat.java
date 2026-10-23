@@ -14,6 +14,7 @@ public enum Compat {
     FTB_ULTIMINE("ftbultimine"),
     FTB_CHUNKS("ftbchunks"),
     TRINKETS("trinkets"),
+    TEAM_REBORN_ENERGY("team_reborn_energy"),
     UNIVERSAL_GRAVES("universal-graves"),
     YIGD("yigd"),
     XAEROS_MINIMAP("xaerominimap"),

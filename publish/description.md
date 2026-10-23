@@ -47,6 +47,16 @@ Available for **NeoForge 1.21.1**, **Fabric 1.21.1** and **Fabric 1.20.1**.
 *   Configurable sales fee and listing limit per player
 *   Sellers get paid even while offline; admins can remove listings
 
+### 📦 Selling chest (optional, `enableSeller = true`)
+
+*   A plain vanilla chest that **sells its contents automatically** — made for farms, no custom block and no client mod needed
+*   Bought in the shop (100 000 $ or 256 diamonds by default); always placed as a single chest, never a double one
+*   When the chest is **full** it sells **everything at once** at the `/sell` prices (minus a configurable tax), every minute by default
+*   Each sale consumes energy — power it with any energy mod (**Forge Energy** on NeoForge, **Team Reborn Energy** on Fabric), or set `sellerEnergyPerSell = 0` to skip power
+*   Daily limit counted in sales; extra daily sells can be bought in the shop once all chests are placed
+*   Earnings arrive as a cheque after a delay (1 day by default): `/seller` shows what is ready and what is maturing, `/seller collect [amount]` pays out any amount
+*   Total earned is a scoreboard objective for leaderboards; admins get `/seller give` and `/seller admin ...` tools
+
 ### 🏠 Homes
 
 *   `/sethome`, `/home`, `/delhome`, `/homes`
@@ -92,7 +102,7 @@ Create and AE2 only exist on NeoForge 1.21.1 and Fabric 1.20.1, so their offers 
 
 | File                          |What it contains                                                          |
 | ----------------------------- |------------------------------------------------------------------------- |
-| <code>config/merchantry-server.toml</code> |currency, earnings, homes, repairs, market, exchange (NeoForge), language |
+| <code>config/merchantry-server.toml</code> |currency, earnings, homes, repairs, market, exchange, selling chest, language |
 | <code>config/merchantry_offers.json</code> |shop offers (edit in-game with <code>/shopconfig</code>)                  |
 | <code>config/merchantry_sell.json</code> |items the server buys and their prices                                    |
 | <code>config/merchantry_compat_offers.json</code> |which mods already got their default offers  |
@@ -105,7 +115,7 @@ Admin commands require permission level 2 (operator).
 *   Minecraft **1.20.1** — **Fabric** Loader 0.15+ with [Fabric API](https://modrinth.com/mod/fabric-api)
 *   Server-side. The client mod is **optional** (only needed for JEI/EMI drag & drop in the editor)
 
-**Optional compatibility:** JEI, EMI, FTB Ultimine, FTB Chunks, Xaero's Minimap, JourneyMap, You're in Grave Danger (all versions); Create and addons, Create: Numismatics, Applied Energistics 2 (NeoForge 1.21.1, Fabric 1.20.1); Curios, Gravestone, Corpse (NeoForge); Trinkets, Universal Graves (Fabric)
+**Optional compatibility:** JEI, EMI, FTB Ultimine, FTB Chunks, Xaero's Minimap, JourneyMap, You're in Grave Danger (all versions); Create and addons, Create: Numismatics, Applied Energistics 2 (NeoForge 1.21.1, Fabric 1.20.1); Curios, Gravestone, Corpse (NeoForge); Trinkets, Universal Graves (Fabric); an energy mod to power the selling chest — any Forge Energy mod (NeoForge) or Team Reborn Energy mod (Fabric)
 
 ## 📜 License
 

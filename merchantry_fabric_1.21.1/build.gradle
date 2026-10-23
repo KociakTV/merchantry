@@ -85,6 +85,8 @@ dependencies {
     // Universal Graves i You're in Grave Danger (bez grobu, gdy zadziałał ładunek keepInventory)
     modCompileOnly("maven.modrinth:universal-graves:${universal_graves_version}") { transitive = false }
     modCompileOnly("maven.modrinth:yigd:${yigd_version}") { transitive = false }
+    // Team Reborn Energy (zasilanie skrzynek sprzedających)
+    modCompileOnly("teamreborn:energy:${team_reborn_energy_version}") { transitive = false }
 
     // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
     modCompileOnly "maven.modrinth:jei:${jei_version}"
@@ -111,6 +113,7 @@ def testModUrls() {
             "https://maven.architectury.dev/dev/architectury/architectury-fabric/${architectury_version}/architectury-fabric-${architectury_version}.jar",
             modrinth("trinkets", trinkets_version),
             modrinth("universal-graves", universal_graves_version),
+            "https://maven.fabricmc.net/teamreborn/energy/${team_reborn_energy_version}/energy-${team_reborn_energy_version}.jar",
             modrinth("emi", emi_version),
     ]
 }

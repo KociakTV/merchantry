@@ -8,7 +8,9 @@
     "CommandsMixin",
     "PlayerAdvancementsMixin",
     "ServerPlayerMixin",
-    "compat.FtbChunksMixin"
+    "compat.FtbChunksMixin",
+    "BlockItemMixin",
+    "BlockBehaviourMixin"
   ],
   "injectors": {
     "defaultRequire": 1

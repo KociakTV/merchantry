@@ -96,6 +96,8 @@ dependencies {
     // Universal Graves i You're in Grave Danger (bez grobu, gdy zadziałał ładunek keepInventory)
     modCompileOnly("maven.modrinth:universal-graves:${universal_graves_version}") { transitive = false }
     modCompileOnly("maven.modrinth:yigd:${yigd_version}") { transitive = false }
+    // Team Reborn Energy (zasilanie skrzynek sprzedających); w testach dostarcza go Create Crafts & Additions
+    modCompileOnly("teamreborn:energy:${team_reborn_energy_version}") { transitive = false }
 
     // JEI / EMI - opcjonalna część klienta: przeciąganie przedmiotów do edytora ofert
     modCompileOnly "maven.modrinth:jei:${jei_version}"

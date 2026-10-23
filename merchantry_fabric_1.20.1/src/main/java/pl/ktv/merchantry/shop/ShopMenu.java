@@ -99,8 +99,9 @@ public class ShopMenu extends ChestMenu {
     private void handleClick(int slot, boolean right, boolean shift) {
         if (slot < OFFER_SLOTS) {
             int index = page * OFFER_SLOTS + slot;
-            if (tab == Tab.BUY && index < ShopManager.offers().size()) {
-                ConfirmMenu.open(player, ShopManager.offers().get(index), page);
+            List<ShopOffer> visible = ShopService.visibleOffers(player);
+            if (tab == Tab.BUY && index < visible.size()) {
+                ConfirmMenu.open(player, visible.get(index), page);
             } else if (tab == Tab.SELL && index < SellManager.offers().size()) {
                 // LPM: 1 sztuka, PPM: 64, Shift+klik: wszystko
                 SellManager.sell(player, SellManager.offers().get(index), shift ? -1 : right ? 64 : 1);
@@ -128,7 +129,7 @@ public class ShopMenu extends ChestMenu {
     }
 
     private int pageCount() {
-        int size = tab == Tab.SELL ? SellManager.offers().size() : ShopManager.offers().size();
+        int size = tab == Tab.SELL ? SellManager.offers().size() : ShopService.visibleOffers(player).size();
         return Math.max(1, (size + OFFER_SLOTS - 1) / OFFER_SLOTS);
     }
 
@@ -136,10 +137,11 @@ public class ShopMenu extends ChestMenu {
         display.clearContent();
         page = Math.max(0, Math.min(page, pageCount() - 1));
 
+        List<ShopOffer> visible = ShopService.visibleOffers(player);
         for (int slot = 0; slot < OFFER_SLOTS; slot++) {
             int index = page * OFFER_SLOTS + slot;
-            if (tab == Tab.BUY && index < ShopManager.offers().size()) {
-                display.setItem(slot, offerIcon(player, ShopManager.offers().get(index), 1));
+            if (tab == Tab.BUY && index < visible.size()) {
+                display.setItem(slot, offerIcon(player, visible.get(index), 1));
             } else if (tab == Tab.SELL && index < SellManager.offers().size()) {
                 display.setItem(slot, sellIcon(SellManager.offers().get(index)));
             }
@@ -213,14 +215,19 @@ public class ShopMenu extends ChestMenu {
             lore.add(Lang.msg("shop.quantity", quantity));
         }
         lore.add(Lang.msg("shop.price", Payment.describe(player, offer, quantity)));
-        lore.add(Lang.msg(switch (ShopService.status(player, offer, quantity)) {
+        ShopService.Status status = ShopService.status(player, offer, quantity);
+        lore.add(Lang.msg(switch (status) {
             case AVAILABLE -> "shop.status.buy";
             case CANT_AFFORD -> "shop.status.cant_afford";
             case OWNED -> "shop.status.owned";
             case MAX_REACHED -> "shop.status.max";
             case NOTHING_TO_REPAIR -> "shop.status.nothing_to_repair";
             case UNAVAILABLE -> "shop.status.unavailable";
+            case LOCKED -> "shop.status.locked";
         }));
+        if (status == ShopService.Status.LOCKED) {
+            lore.add(pl.ktv.merchantry.seller.SellerService.lockReason(player));
+        }
         ItemStack icon = offer.iconStack();
         icon.setCount(Math.min(99, icon.getCount() * quantity));
         return named(icon, offer.displayName().copy().withStyle(ChatFormatting.GOLD), lore);

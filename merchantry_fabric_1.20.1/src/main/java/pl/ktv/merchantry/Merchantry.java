@@ -9,6 +9,8 @@ import pl.ktv.merchantry.compat.ultimine.UltimineCompat;
 import pl.ktv.merchantry.data.ModAttachments;
 import pl.ktv.merchantry.event.PlayerEvents;
 import pl.ktv.merchantry.event.ServerEvents;
+import pl.ktv.merchantry.seller.SellerEnergy;
+import pl.ktv.merchantry.seller.SellerEvents;
 
 // Klasa główna moda. Mod działa wyłącznie po stronie serwera - gracze nie muszą go instalować.
 public class Merchantry implements ModInitializer {
@@ -25,5 +27,10 @@ public class Merchantry implements ModInitializer {
             UltimineCompat.register();
         }
         GravesCompat.register();
+        // Skrzynki sprzedające: zdarzenia i (jeśli jest Team Reborn Energy) przyjmowanie prądu
+        SellerEvents.register();
+        if (Compat.TEAM_REBORN_ENERGY.isLoaded()) {
+            SellerEnergy.register();
+        }
     }
 }

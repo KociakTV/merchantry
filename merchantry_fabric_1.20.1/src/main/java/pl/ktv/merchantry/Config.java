@@ -63,6 +63,18 @@ public final class Config {
     public static final Value<Double> DOLLARS_PER_SPUR;
     public static final Value<Double> EXCHANGE_FEE_PERCENT;
 
+    public static final Value<Boolean> ENABLE_SELLER;
+    public static final Value<Double> SELLER_TAX_PERCENT;
+    public static final Value<Integer> SELLER_MAX_CRATES;
+    public static final Value<Integer> SELLER_DAILY_SELLS;
+    public static final Value<Boolean> SELLER_ONLY_WHEN_FULL;
+    public static final Value<Integer> SELLER_INTERVAL_SECONDS;
+    public static final Value<Integer> SELLER_ENERGY_PER_SELL;
+    public static final Value<Integer> SELLER_ENERGY_CAPACITY;
+    public static final Value<Integer> SELLER_MAX_RECEIVE;
+    public static final Value<Integer> SELLER_PAYOUT_DELAY_DAYS;
+    public static final Value<String> SELLER_EARNED_OBJECTIVE;
+
     public static final Value<Double> REPAIR_COST_PER_PERCENT;
     public static final Value<Double> SPECIAL_ITEM_TIER;
 
@@ -156,6 +168,43 @@ public final class Config {
         ULTIMINE_REQUIRES_UNLOCK = define("ultimineRequiresUnlock", true,
                 "FTB Ultimine works only for players who bought the \"ultimine\" unlock in the shop",
                 "(operators too, when opsBypassUnlocks is enabled). false = everyone can use ultimine.");
+
+        section("seller");
+        ENABLE_SELLER = define("enableSeller", false,
+                "Selling chests: a normal chest with custom data that sells its whole contents at once at the server's",
+                "buy-back prices (config/merchantry_sell.json). Disabled by default. Works only when currency is enabled.",
+                "The shop offers for the chest are added the first time the server starts with this enabled.",
+                "IMPORTANT: a selling chest works only when it receives energy, so the modpack needs a mod that produces",
+                "energy through Team Reborn Energy (Create Crafts & Additions, TechReborn...) - unless sellerEnergyPerSell = 0.");
+        SELLER_TAX_PERCENT = defineInRange("sellerTaxPercent", 40.0, 0.0, 100.0,
+                "Tax in percent taken from every sale of a selling chest (0 = no tax).",
+                "Keep it high - the farm behind the chest produces items for free.");
+        SELLER_MAX_CRATES = defineInRange("sellerMaxCratesPerPlayer", 4, 1, 1000,
+                "Maximum number of selling chests per player");
+        SELLER_DAILY_SELLS = defineInRange("sellerDailySells", 0, 0, 1_000_000,
+                "Daily limit of sells per player (all their chests together). One sell = one chest sold whole.",
+                "0 = the same as sellerMaxCratesPerPlayer (the limit then follows that value automatically).",
+                "If you set it yourself, keep it equal to or greater than sellerMaxCratesPerPlayer,",
+                "otherwise some chests will stand idle for part of the day.",
+                "Players can buy extra daily sells in the shop (offer seller_extra_sell). The counter resets at midnight (server time).");
+        SELLER_ONLY_WHEN_FULL = define("sellerOnlyWhenFull", true,
+                "true = a chest sells only when it is full (no free slot), so a sell is always a whole chest.",
+                "false = it sells whenever it holds anything the server buys, which wastes daily sells on tiny batches.");
+        SELLER_INTERVAL_SECONDS = defineInRange("sellerIntervalSeconds", 60, 1, 3600,
+                "How often (in seconds) every selling chest checks whether it can sell");
+        SELLER_ENERGY_PER_SELL = defineInRange("sellerEnergyPerSell", 100_000, 0, 1_000_000_000,
+                "Energy one sell costs. The chest takes energy from any mod's cables or generators (Team Reborn Energy).",
+                "0 = no power needed (then no energy mod is required).");
+        SELLER_ENERGY_CAPACITY = defineInRange("sellerEnergyCapacity", 2_000_000, 1, 1_000_000_000,
+                "How much energy a selling chest can store");
+        SELLER_MAX_RECEIVE = defineInRange("sellerMaxReceive", 10_000, 1, 1_000_000_000,
+                "Maximum energy a selling chest accepts in one transfer (limits how fast it charges)");
+        SELLER_PAYOUT_DELAY_DAYS = defineInRange("sellerPayoutDelayDays", 1, 0, 30,
+                "Earnings from a given day can be collected as a cheque only after this many days",
+                "(real days, server time). Prevents quick money loops. 0 = collect immediately.");
+        SELLER_EARNED_OBJECTIVE = define("sellerEarnedObjective", "merchantry_seller_earned",
+                "Scoreboard objective with the total money each player earned from selling chests (after tax),",
+                "for leaderboard mods and datapacks (empty = disabled)");
 
         section("repair");
         REPAIR_COST_PER_PERCENT = defineInRange("repairCostPerPercent", 2.0, 0.0, 1_000_000.0,

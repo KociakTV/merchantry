@@ -149,6 +149,13 @@ public final class SellManager {
         return true;
     }
 
+    // Cena skupu jednej sztuki podanego przedmiotu; 0, gdy serwer go nie skupuje albo przedmiot jest nietypowy
+    // (z własną nazwą, zaklęty, uszkodzony). Używane przez skrzynki sprzedające.
+    public static long priceOf(ItemStack stack) {
+        SellOffer offer = find(stack.getItem());
+        return offer != null && sellable(stack, stack.getItem()) ? offer.price() : 0;
+    }
+
     private static boolean sellable(ItemStack stack, Item item) {
         return stack.is(item) && !stack.has(DataComponents.CUSTOM_NAME) && !stack.isEnchanted()
                 && (!stack.isDamageableItem() || !stack.isDamaged());
