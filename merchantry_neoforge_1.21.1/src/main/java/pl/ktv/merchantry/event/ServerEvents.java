@@ -34,6 +34,7 @@ public final class ServerEvents {
         RepairCommands.register(event.getDispatcher());
         KeepInventoryCommand.register(event.getDispatcher());
         ExchangeCommand.register(event.getDispatcher());
+        pl.ktv.merchantry.command.SellerCommand.register(event.getDispatcher());
         pl.ktv.merchantry.command.MarketCommand.register(event.getDispatcher());
     }
 

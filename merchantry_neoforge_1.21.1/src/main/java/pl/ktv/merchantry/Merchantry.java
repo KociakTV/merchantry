@@ -11,6 +11,7 @@ import pl.ktv.merchantry.compat.graves.GravesCompat;
 import pl.ktv.merchantry.compat.ultimine.UltimineCompat;
 import pl.ktv.merchantry.data.ModAttachments;
 import pl.ktv.merchantry.network.DeathSavedPacket;
+import pl.ktv.merchantry.seller.SellerEnergy;
 
 // Klasa główna moda. Mod działa wyłącznie po stronie serwera - gracze nie muszą go instalować.
 @Mod(Merchantry.MOD_ID)
@@ -22,6 +23,8 @@ public class Merchantry {
         ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
         modEventBus.addListener(DeathSavedPacket::register);
+        // Skrzynki sprzedające przyjmują prąd (FE) przez zdolność dopisaną do zwykłej skrzynki
+        modEventBus.addListener(SellerEnergy::register);
         if (Compat.FTB_ULTIMINE.isLoaded()) {
             UltimineCompat.register();
         }

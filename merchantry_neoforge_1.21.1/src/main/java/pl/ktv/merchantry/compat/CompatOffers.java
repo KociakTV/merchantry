@@ -12,7 +12,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import pl.ktv.merchantry.Lang;
 import pl.ktv.merchantry.Merchantry;
+import pl.ktv.merchantry.seller.SellerService;
 import pl.ktv.merchantry.shop.ItemPrice;
 import pl.ktv.merchantry.shop.OfferType;
 import pl.ktv.merchantry.shop.ShopManager;
@@ -32,6 +34,8 @@ import java.util.Set;
 // zapisane w config/merchantry_compat_offers.json, więc oferty usunięte przez admina nie wracają.
 public final class CompatOffers {
     private static final String FILE_NAME = Merchantry.MOD_ID + "_compat_offers.json";
+    // Identyfikator w pliku "już dodane" dla skrzynki sprzedającej
+    private static final String SELLER_PACK_ID = "seller_crate";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Kupno: ilość w ofercie, cena w $ i cena w przedmiotach (gdy waluta wyłączona)
@@ -123,6 +127,12 @@ public final class CompatOffers {
             stateChanged = true;
             Merchantry.LOGGER.info("Dodano domyślne oferty dla {}", pack.mod().modId());
         }
+        // Skrzynka sprzedająca (własna funkcja moda, więc bez sprawdzania obecności innego moda) - raz
+        if (!applied.contains(SELLER_PACK_ID)) {
+            shopChanged |= addSellerCrateOffer();
+            applied.add(SELLER_PACK_ID);
+            stateChanged = true;
+        }
         if (shopChanged) {
             ShopManager.save();
         }
@@ -132,6 +142,22 @@ public final class CompatOffers {
         if (stateChanged) {
             saveApplied(applied);
         }
+    }
+
+    // Domyślna oferta skrzynki sprzedającej: droga, bo przynosi stały dochód (admin może zmienić cenę w /shopconfig)
+    private static boolean addSellerCrateOffer() {
+        if (ShopManager.find("seller_crate") != null) {
+            return false;
+        }
+        ShopOffer offer = new ShopOffer("seller_crate", OfferType.ITEM);
+        // Przedmiot w języku domyślnym; kupującemu sklep da wersję w jego języku (patrz ShopService.deliver)
+        offer.item = Lang.with(null, SellerService::createItem);
+        offer.name = "@default.seller_crate";
+        offer.description.add("@default.seller_crate.desc");
+        offer.moneyPrice = 75_000L;
+        offer.itemPrice = new ItemPrice(Items.DIAMOND, 192);
+        ShopManager.offers().add(offer);
+        return true;
     }
 
     private static boolean addBuy(Pack pack, Buy buy) {

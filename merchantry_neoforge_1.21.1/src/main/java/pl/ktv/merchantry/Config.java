@@ -44,6 +44,17 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue MARKET_FEE_PERCENT;
     public static final ModConfigSpec.IntValue MAX_MARKET_LISTINGS;
 
+    public static final ModConfigSpec.BooleanValue ENABLE_SELLER;
+    public static final ModConfigSpec.DoubleValue SELLER_TAX_PERCENT;
+    public static final ModConfigSpec.IntValue SELLER_DAILY_STACKS;
+    public static final ModConfigSpec.IntValue SELLER_STACKS_PER_CYCLE;
+    public static final ModConfigSpec.IntValue SELLER_INTERVAL_SECONDS;
+    public static final ModConfigSpec.IntValue SELLER_ENERGY_PER_STACK;
+    public static final ModConfigSpec.IntValue SELLER_ENERGY_CAPACITY;
+    public static final ModConfigSpec.IntValue SELLER_MAX_RECEIVE;
+    public static final ModConfigSpec.IntValue SELLER_PAYOUT_DELAY_DAYS;
+    public static final ModConfigSpec.IntValue SELLER_MAX_CRATES;
+
     public static final ModConfigSpec.BooleanValue ENABLE_EXCHANGE;
     public static final ModConfigSpec.DoubleValue DOLLARS_PER_SPUR;
     public static final ModConfigSpec.DoubleValue EXCHANGE_FEE_PERCENT;
@@ -164,6 +175,45 @@ public final class Config {
         MAX_MARKET_LISTINGS = BUILDER
                 .comment("Maximum number of active listings per player")
                 .defineInRange("maxListingsPerPlayer", 10, 1, 1000);
+        BUILDER.pop();
+
+        BUILDER.push("seller");
+        ENABLE_SELLER = BUILDER
+                .comment("Selling chests: a normal chest with custom data that automatically sells its contents at the server's",
+                        "buy-back prices (config/merchantry_sell.json). Works only when currency is enabled.")
+                .define("enableSeller", true);
+        SELLER_TAX_PERCENT = BUILDER
+                .comment("Tax in percent taken from every sale of a selling chest (0 = no tax).",
+                        "Keep it high - the farm behind the chest produces items for free.")
+                .defineInRange("sellerTaxPercent", 40.0, 0.0, 100.0);
+        SELLER_DAILY_STACKS = BUILDER
+                .comment("Daily limit per player (all their chests together), in stacks. One stack = item count / max stack size,",
+                        "so 64 wheat and 16 ender pearls both count as 1. The counter resets at midnight (server time).",
+                        "A single chest holds 27 stacks.")
+                .defineInRange("sellerDailyStacks", 16, 1, 1_000_000);
+        SELLER_STACKS_PER_CYCLE = BUILDER
+                .comment("Maximum stacks one chest sells per cycle")
+                .defineInRange("sellerStacksPerCycle", 4, 1, 1000);
+        SELLER_INTERVAL_SECONDS = BUILDER
+                .comment("Length of one selling cycle in seconds")
+                .defineInRange("sellerIntervalSeconds", 10, 1, 3600);
+        SELLER_ENERGY_PER_STACK = BUILDER
+                .comment("Energy (FE) one stack costs to sell. The chest takes FE from any mod's cables or generators",
+                        "(Create Crafts & Additions, Create: New Age, Mekanism...). 0 = no power needed.")
+                .defineInRange("sellerEnergyPerStack", 10_000, 0, 100_000_000);
+        SELLER_ENERGY_CAPACITY = BUILDER
+                .comment("How much energy (FE) a selling chest can store")
+                .defineInRange("sellerEnergyCapacity", 400_000, 1, 1_000_000_000);
+        SELLER_MAX_RECEIVE = BUILDER
+                .comment("Maximum energy (FE) a selling chest accepts in one transfer (limits how fast it charges)")
+                .defineInRange("sellerMaxReceive", 10_000, 1, 1_000_000_000);
+        SELLER_PAYOUT_DELAY_DAYS = BUILDER
+                .comment("Earnings from a given day can be collected as a cheque only after this many days",
+                        "(real days, server time). Prevents quick money loops. 0 = collect immediately.")
+                .defineInRange("sellerPayoutDelayDays", 2, 0, 30);
+        SELLER_MAX_CRATES = BUILDER
+                .comment("Maximum number of selling chests per player")
+                .defineInRange("sellerMaxCratesPerPlayer", 4, 1, 1000);
         BUILDER.pop();
 
         BUILDER.push("exchange");

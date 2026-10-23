@@ -105,7 +105,9 @@ public final class ShopService {
         switch (offer.type) {
             case ITEM -> {
                 for (int i = 0; i < quantity; i++) {
-                    ItemHandlerHelper.giveItemToPlayer(player, offer.item.copy());
+                    // Skrzynka sprzedająca dostaje nazwę i opis w języku kupującego
+                    ItemHandlerHelper.giveItemToPlayer(player, pl.ktv.merchantry.seller.SellerService.isCrateItem(offer.item)
+                            ? pl.ktv.merchantry.seller.SellerService.createItem() : offer.item.copy());
                 }
             }
             case UNLOCK -> ModAttachments.get(player).unlocks.add(offer.unlock);
