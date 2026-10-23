@@ -56,6 +56,7 @@
   "shop.cant_afford": "§cNie stać cię. Cena: §6%s",
   "shop.nothing_to_repair": "§cNie masz nic do naprawy.",
   "shop.status.nothing_to_repair": "§7Nic do naprawy",
+  "shop.status.locked": "§cZablokowane",
   "shop.quantity": "§7Ilość: §f%s",
 
   "confirm.title": "Potwierdź zakup",
@@ -140,6 +141,10 @@
   "seller.status.total": "§7Zarobiono łącznie ze skrzynek sprzedających: §f%s",
   "seller.collect.too_much": "§cTeraz do odbioru jest tylko §f%s§c.",
   "seller.collect.left": "§7Nadal gotowe do odbioru: §f%s",
+  "seller.extra.requirement": "§cDodatkowe dzienne sprzedaże możesz dokupić dopiero po postawieniu wszystkich swoich skrzynek sprzedających (postawiono %s/%s).",
+  "seller.admin.list.none": "§7Nie ma żadnych skrzynek sprzedających.",
+  "seller.admin.list.header": "§6Skrzynki sprzedające: §f%s",
+  "seller.admin.list.line": "§7- §f%s §7w §f%s §7- właściciel §f%s§7, energia §e%s FE",
   "scoreboard.seller_earned": "Zarobek ze skrzynek sprzedających",
   "default.seller_extra": "Dodatkowa dzienna sprzedaż",
   "default.seller_extra.desc": "Jedna sprzedaż skrzynki sprzedającej więcej dziennie (na stałe)",

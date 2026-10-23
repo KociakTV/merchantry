@@ -51,6 +51,7 @@ public final class SellerCommand {
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                         .then(Commands.argument("owner", EntityArgument.player())
                                                 .executes(SellerCommand::adminAdd))))
+                        .then(Commands.literal("list").executes(SellerCommand::adminList))
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                         .executes(SellerCommand::adminRemove)))
@@ -132,6 +133,23 @@ public final class SellerCommand {
         context.getSource().sendSuccess(() -> Lang.msg("seller.admin.added", pos.toShortString(),
                 owner.getGameProfile().getName()), true);
         return 1;
+    }
+
+    // /seller admin list - wszystkie zarejestrowane skrzynki: wymiar, pozycja, właściciel, energia
+    private static int adminList(CommandContext<CommandSourceStack> context) {
+        SellerData data = SellerData.get(context.getSource().getServer());
+        if (data.crates.isEmpty()) {
+            context.getSource().sendSuccess(() -> Lang.msg("seller.admin.list.none"), false);
+            return 0;
+        }
+        context.getSource().sendSuccess(() -> Lang.msg("seller.admin.list.header", data.crates.size()), false);
+        data.crates.forEach((pos, crate) -> {
+            SellerData.Ledger ledger = data.ledgers.get(crate.owner);
+            String owner = ledger != null && !ledger.name.isBlank() ? ledger.name : crate.owner.toString();
+            context.getSource().sendSuccess(() -> Lang.msg("seller.admin.list.line", pos.dimension().location().toString(),
+                    pos.pos().toShortString(), owner, crate.energy), false);
+        });
+        return data.crates.size();
     }
 
     private static int adminRemove(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

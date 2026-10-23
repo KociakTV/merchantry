@@ -24,6 +24,8 @@ import pl.ktv.merchantry.Lang;
 import pl.ktv.merchantry.Merchantry;
 import pl.ktv.merchantry.economy.Cheque;
 import pl.ktv.merchantry.economy.Economy;
+import pl.ktv.merchantry.shop.OfferType;
+import pl.ktv.merchantry.shop.ShopOffer;
 import pl.ktv.merchantry.shop.sell.SellManager;
 
 import java.time.LocalDate;
@@ -76,6 +78,38 @@ public final class SellerService {
     public static int dailySellsConfigured() {
         int configured = Config.SELLER_DAILY_SELLS.get();
         return configured > 0 ? configured : Config.SELLER_MAX_CRATES.get();
+    }
+
+    // Oferta sklepu, która dodaje dzienną sprzedaż (komenda "seller admin extra ...")
+    public static boolean isExtraSellOffer(ShopOffer offer) {
+        return offer.type == OfferType.COMMAND && offer.command != null
+                && offer.command.startsWith("seller admin extra");
+    }
+
+    // Czy oferta ma być widoczna w sklepie dla tego gracza:
+    // - skrzynka sprzedająca i dokupienie sprzedaży znikają, gdy funkcja jest wyłączona,
+    // - dokupienie sprzedaży pojawia się dopiero po postawieniu wszystkich skrzynek (jak oferty modów, których nie ma)
+    public static boolean isVisibleTo(ServerPlayer player, ShopOffer offer) {
+        boolean extra = isExtraSellOffer(offer);
+        boolean crate = offer.type == OfferType.ITEM && isCrateItem(offer.item);
+        if (!extra && !crate) {
+            return true;
+        }
+        if (!Config.ENABLE_SELLER.get()) {
+            return false;
+        }
+        return !extra || extraSellsUnlocked(player);
+    }
+
+    // Dodatkowe sprzedaże można dokupić dopiero, gdy gracz ma postawione wszystkie dozwolone skrzynki
+    public static boolean extraSellsUnlocked(ServerPlayer player) {
+        return countCrates(SellerData.get(player.server), player.getUUID()) >= Config.SELLER_MAX_CRATES.get();
+    }
+
+    // Wyjaśnienie, dlaczego oferta jest zablokowana (ile skrzynek ma gracz, a ile potrzeba)
+    public static Component lockReason(ServerPlayer player) {
+        return Lang.msg("seller.extra.requirement",
+                countCrates(SellerData.get(player.server), player.getUUID()), Config.SELLER_MAX_CRATES.get());
     }
 
     // Ile sprzedaży dziennie ma ten gracz: limit z konfiguracji + dokupione w sklepie

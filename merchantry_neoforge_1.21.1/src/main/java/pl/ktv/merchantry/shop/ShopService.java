@@ -6,12 +6,15 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import pl.ktv.merchantry.Merchantry;
+import pl.ktv.merchantry.seller.SellerService;
 import pl.ktv.merchantry.Config;
 import pl.ktv.merchantry.Lang;
 import pl.ktv.merchantry.command.HomeCommands;
 import pl.ktv.merchantry.data.ModAttachments;
 import pl.ktv.merchantry.repair.Repair;
 import pl.ktv.merchantry.unlock.Unlock;
+
+import java.util.List;
 
 // Logika zakupu oferty
 public final class ShopService {
@@ -20,7 +23,12 @@ public final class ShopService {
 
     // Stan oferty z punktu widzenia gracza - do opisu w oknie i sprawdzenia przed zakupem
     public enum Status {
-        AVAILABLE, CANT_AFFORD, OWNED, MAX_REACHED, NOTHING_TO_REPAIR, UNAVAILABLE
+        AVAILABLE, CANT_AFFORD, OWNED, MAX_REACHED, NOTHING_TO_REPAIR, UNAVAILABLE, LOCKED
+    }
+
+    // Oferty widoczne dla gracza w oknie sklepu (część ofert pojawia się dopiero po spełnieniu warunków)
+    public static List<ShopOffer> visibleOffers(ServerPlayer player) {
+        return ShopManager.offers().stream().filter(offer -> SellerService.isVisibleTo(player, offer)).toList();
     }
 
     // Ile razy można kupić ofertę w jednej transakcji - wybór ilości mają przedmioty i ładunki keepInventory
@@ -56,6 +64,12 @@ public final class ShopService {
                     return Status.MAX_REACHED;
                 }
             }
+            case COMMAND -> {
+                // Dodatkowe dzienne sprzedaże skrzynek sprzedających: dopiero po postawieniu wszystkich skrzynek
+                if (SellerService.isExtraSellOffer(offer) && !SellerService.extraSellsUnlocked(player)) {
+                    return Status.LOCKED;
+                }
+            }
             default -> {
             }
         }
@@ -65,13 +79,18 @@ public final class ShopService {
     public static boolean purchase(ServerPlayer player, ShopOffer offer, int quantity) {
         quantity = Math.max(1, Math.min(quantity, maxQuantity(offer)));
         Price price = Payment.price(player, offer, quantity);
-        String error = switch (status(player, offer, quantity)) {
+        Status status = status(player, offer, quantity);
+        if (status == Status.LOCKED) {
+            player.sendSystemMessage(SellerService.lockReason(player));
+            return false;
+        }
+        String error = switch (status) {
             case UNAVAILABLE -> "shop.not_available";
             case OWNED -> "shop.already_owned";
             case MAX_REACHED -> offer.type == OfferType.KEEP_INVENTORY ? "shop.max_keepinv" : "shop.max_homes";
             case NOTHING_TO_REPAIR -> "shop.nothing_to_repair";
             case CANT_AFFORD -> "shop.cant_afford";
-            case AVAILABLE -> null;
+            case AVAILABLE, LOCKED -> null;
         };
         if (error != null) {
             player.sendSystemMessage(Lang.msg(error, price != null ? price.describe() : ""));

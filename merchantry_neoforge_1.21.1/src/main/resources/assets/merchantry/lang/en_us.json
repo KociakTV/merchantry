@@ -56,6 +56,7 @@
   "shop.cant_afford": "§cYou can't afford this. Price: §6%s",
   "shop.nothing_to_repair": "§cYou have nothing to repair.",
   "shop.status.nothing_to_repair": "§7Nothing to repair",
+  "shop.status.locked": "§cLocked",
   "shop.quantity": "§7Quantity: §f%s",
 
   "confirm.title": "Confirm purchase",
@@ -140,6 +141,10 @@
   "seller.status.total": "§7Earned from selling chests in total: §f%s",
   "seller.collect.too_much": "§cOnly §f%s §cis ready to collect right now.",
   "seller.collect.left": "§7Still ready to collect: §f%s",
+  "seller.extra.requirement": "§cYou can buy extra daily sells only after placing all your selling chests (%s/%s placed).",
+  "seller.admin.list.none": "§7There are no selling chests.",
+  "seller.admin.list.header": "§6Selling chests: §f%s",
+  "seller.admin.list.line": "§7- §f%s §7at §f%s §7- owner §f%s§7, energy §e%s FE",
   "scoreboard.seller_earned": "Earned from selling chests",
   "default.seller_extra": "Extra daily sell",
   "default.seller_extra.desc": "One more selling-chest sale per day (permanent)",
